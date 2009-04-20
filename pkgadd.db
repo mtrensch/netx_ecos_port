@@ -1,0 +1,60 @@
+package CYGPKG_IO_SERIAL_ARM_NETX {
+    alias             { "Hilscher netX (PL010) serial driver"
+                        devs_serial_arm_netx netx_serial_driver }
+    hardware
+    directory         devs/serial/arm/netx
+    script            ser_arm_netx.cdl
+    description       "Hilscher netX PL010 serial device driver"
+}
+
+package CYGPKG_DEVS_ETH_ARM_NETX500 {
+	alias		{ "Hilscher netX500 Standard MAC driver" netx500_eth_driver}
+	hardware
+	directory	devs/eth/arm/netx500
+	script		netx500_eth.cdl
+	description	"Ethernet driver for netX500 XC units 0,1."
+}
+
+package CYGPKG_HAL_ARM_ARM9_NETX500 {
+	alias		{ "Hilscher netX100/500" hal_arm_arm9_netx500 }
+	directory	hal/arm/arm9/netx500
+	script		hal_arm_arm9_netx500.cdl
+	hardware
+	description "
+	The netX100/500 HAL package provides support for Hilscher
+	netX100/500 controllers."
+
+}
+
+package CYGPKG_HAL_ARM_ARM9_NETX50 {
+	alias		{ "Hilscher netX50" hal_arm_arm9_netx50 }
+	directory	hal/arm/arm9/netx50
+	script		hal_arm_arm9_netx50.cdl
+	hardware
+	description "
+	The netX50 HAL package provides support for Hilscher
+	netX50 controllers."
+
+}
+
+target netx500_arm9_eb500hmi {
+	alias  {"Hilscher NXEB500-HMI Board" netx500_arm9_eb500hmi }
+	packages { CYGPKG_HAL_ARM
+		   CYGPKG_HAL_ARM_ARM9
+		   CYGPKG_HAL_ARM_ARM9_NETX500 
+		   CYGPKG_DEVS_ETH_ARM_NETX500
+		   CYGPKG_IO_SERIAL_ARM_NETX
+	}
+	description "
+	NXEB500-HMI Board."
+}
+
+target netx500_arm9_nxhx50 {
+	alias  {"Hilscher NXHX50 Board" netx500_arm9_nxhx50 }
+	packages { CYGPKG_HAL_ARM
+		   CYGPKG_HAL_ARM_ARM9
+		   CYGPKG_HAL_ARM_ARM9_NETX50 
+	}
+	description "
+	NXHX50 Board."
+}
