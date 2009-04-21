@@ -160,7 +160,7 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX50 {
             display "Global command prefix"
             flavor  data
             no_define
-            default_value { "arm-elf" }
+            default_value { "arm-eabi" }
             description "
                 This option specifies the command prefix used when
                 invoking the build tools."
@@ -171,7 +171,7 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX50 {
             flavor  data
             no_define
             default_value { 
-            "-mcpu=arm9 -Wall -Wpointer-arith -Wstrict-prototypes -Winline -Wundef -Woverloaded-virtual -g -O2 -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fvtable-gc -finit-priority"
+            "-mcpu=arm926ej-s -Wall -Wpointer-arith -Wstrict-prototypes -Winline -Wundef -Woverloaded-virtual -g -O2 -ffunction-sections -fdata-sections -fno-rtti -fno-exceptions -fvtable-gc -finit-priority"
 	     }
 		 
             description   "
@@ -185,7 +185,7 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX50 {
             flavor  data
             no_define
             default_value {
-		    "-Wl,-Map,map -mcpu=arm9 -g -nostdlib -Wl,--gc-sections -Wl,-static"
+		    "-Wl,-Map,map -mcpu=arm926ej-s -g -nostdlib -Wl,--gc-sections -Wl,-static"
 		}
             description   "
                 This option controls the global linker flags. Individual
