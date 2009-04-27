@@ -73,7 +73,7 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX500 {
         puts $::cdl_system_header "#define CYGBLD_HAL_PLATFORM_H <pkgconf/hal_arm_netx.h>"		
 	}
 
-    compile       hal_diag.c netx_misc.c
+    compile       hal_diag.c netx_misc.c netx_xc.c
 
     cdl_option CYGNUM_HAL_VIRTUAL_VECTOR_COMM_CHANNELS {
         display      "Number of communication channels on the board"

@@ -87,5 +87,13 @@ extern cyg_uint32 hal_phys_to_virt_address(cyg_uint32 phys, cyg_bool fCached);
    _va = hal_phys_to_virt_address(_pa, false)
 #endif
 
+cyg_bool xc_open(cyg_uint32 ulUnit);
+cyg_bool xc_close(cyg_uint32 ulUnit);
+
+cyg_bool xc_load(cyg_uint32 ulUnit, const cyg_uint32* pulXPEC, const cyg_uint32* pulXMACRPU, const cyg_uint32* pulXMACTPU);
+cyg_bool xc_reset(cyg_uint32 ulUnit);
+cyg_bool xc_start(cyg_uint32 ulUnit);
+cyg_bool xc_stop(cyg_uint32 ulUnit);
+
 #endif //CYGONCE_HAL_NETX_H
 
