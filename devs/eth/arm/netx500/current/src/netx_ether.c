@@ -107,9 +107,9 @@ typedef struct NETX_ETH_PORT_INFOtag
 {
   cyg_uint32            ulPort;
   cyg_vector_t          ulInterrupt;
-  cyg_uint32*           pulxPECFirmware;
-  cyg_uint32*           pulxMACRPUFirmware;
-  cyg_uint32*           pulxMACTPUFirmware;
+  const cyg_uint32*     pulxPECFirmware;
+  const cyg_uint32*     pulxMACRPUFirmware;
+  const cyg_uint32*     pulxMACTPUFirmware;
 
   cyg_uint32            ulxPECBasePhys;
   cyg_uint32            ulxMACBasePhys;
@@ -253,193 +253,6 @@ static void PhyMDIO(unsigned int uPhyPrt, unsigned int uAcc, unsigned int uRegAd
       tVlu.val = s_ptMiiMu->val;
     } while(tVlu.bf.miimu_snrdy == 1); /* Wait until PHY is ready first of all */
   } 
-}                             
-
-static cyg_bool XC_LoadUnit(cyg_uint32* pulFirmware, volatile cyg_uint32* pulBase, cyg_uint32 ulPhysBase)
-{
-  unsigned int uiElements = pulFirmware[0] / sizeof(unsigned long) - 1;
-  volatile cyg_uint32* pulDest;
-  volatile cyg_uint32* pulDestCnt;
-  volatile cyg_uint32* pulSource;
-  volatile cyg_uint32* pulSourceEnd;
-  volatile cyg_uint32* pulSourceCnt;
-
-  // get the number of code elements
-  uiElements = pulFirmware[0] / sizeof(unsigned long) - 1;
-  
-  // get the pointer in the xc area
-  // ram_virtual_start + code_physical_start - ram_physical_start
-  pulDest = pulBase + (pulFirmware[2] - ulPhysBase) / sizeof(unsigned long);
-
-  // get source start and end pointer
-  pulSource    = pulFirmware + 3;
-  pulSourceEnd = pulSource + uiElements;
-
-  // copy the code to xc ram
-  pulSourceCnt = pulSource;
-  pulDestCnt   = pulDest;
-  while(pulSourceCnt < pulSourceEnd) 
-  {
-    *(pulDestCnt++) = *(pulSourceCnt++);
-  }
-
-  // compare the code
-  pulSourceCnt = pulSource;
-  pulDestCnt   = pulDest;
-  while(pulSourceCnt < pulSourceEnd) 
-  {
-    if( *(pulDestCnt++) != *(pulSourceCnt++) ) 
-    {
-      return false;
-    }
-  }
-
-  // get the number of trailing loads
-  uiElements = pulFirmware[1] / sizeof(unsigned long);
-
-  // get source start and end pointer
-  pulSourceCnt = pulFirmware + 2 + pulFirmware[0] / sizeof(unsigned long);
-  pulSourceEnd = pulSourceCnt + uiElements;
-
-  // write all trailing loads
-  while( pulSourceCnt < pulSourceEnd ) 
-  {
-    // get the destination address
-    // ram_virtual_start + data_physical_start - ram_physical_start
-    pulDest = pulBase + (*(pulSourceCnt++) - ulPhysBase) / sizeof(unsigned long);
-    // write the data
-    *pulDest = *(pulSourceCnt++);
-  }
-
-  return true;
-}
-
-static cyg_bool XC_Load(PNETX_ETH_PORT_INFO ptPortInfo)
-{
-  return XC_LoadUnit(ptPortInfo->pulxPECFirmware,    ptPortInfo->pulxPECBase, ptPortInfo->ulxPECBasePhys) &&
-         XC_LoadUnit(ptPortInfo->pulxMACRPUFirmware, ptPortInfo->pulxMACBase, ptPortInfo->ulxMACBasePhys) &&
-         XC_LoadUnit(ptPortInfo->pulxMACTPUFirmware, ptPortInfo->pulxMACBase, ptPortInfo->ulxMACBasePhys);
-}
-
-static void XC_Reset(PNETX_ETH_PORT_INFO ptPortInfo)
-{ 
-  volatile cyg_uint32* pulXPECBase = ptPortInfo->pulxPECBase;
-  volatile cyg_uint32* pulXMACBase = ptPortInfo->pulxMACBase;
-  
-  /* =================================================================================================== */  
-  /* Stop XC and reset all pc's                                                                          */
-  /* =================================================================================================== */     
-  pulXPECBase[REL_Adr_xpu_hold_pc / sizeof(unsigned long)]      = MSK_xpu_hold_pc_hold;          /* Stop the xpec now */
-  pulXPECBase[REL_Adr_xpec_pc / sizeof(unsigned long)]          = 0;
-
-  pulXMACBase[REL_Adr_xmac_rpu_hold_pc / sizeof(unsigned long)] = MSK_xmac_rpu_hold_pc_rpu_hold; /* Stop the xmac rpu and set pc=0 */
-  pulXMACBase[REL_Adr_xmac_tpu_hold_pc / sizeof(unsigned long)] = MSK_xmac_tpu_hold_pc_tpu_hold; /* Stop the xmac rpu and set pc=0 */
-
-  /* =================================================================================================== */  
-  /* Set startup values for xPEC                                                                         */
-  /* =================================================================================================== */     
-  //insert command to xPEC which resets all internal states of DMA
-  pulXPECBase[REL_Adr_ram_start / sizeof(unsigned long)]            = 0xC0000FFF;
-  pulXPECBase[REL_Adr_xpu_hold_pc / sizeof(unsigned long)]          = 0;
-  pulXPECBase[(REL_Adr_ram_start + 0x1FFC) / sizeof(unsigned long)] = 0x0000007F;
-  pulXPECBase[REL_Adr_xpu_hold_pc / sizeof(unsigned long)]          = MSK_xpu_hold_pc_hold;
-
-  //reset all event controllers, timers, etc of xPEC
-  pulXPECBase[REL_Adr_xpec_statcfg / sizeof(unsigned long)] = 0;
-  pulXPECBase[REL_Adr_xpec_pc  / sizeof(unsigned long)]     = 0x000007FF;
-  pulXPECBase[REL_Adr_timer0   / sizeof(unsigned long)]     = 0;
-  pulXPECBase[REL_Adr_timer1   / sizeof(unsigned long)]     = 0;
-  pulXPECBase[REL_Adr_timer2   / sizeof(unsigned long)]     = 0;
-  pulXPECBase[REL_Adr_timer3   / sizeof(unsigned long)]     = 0;
-  pulXPECBase[REL_Adr_timer4   / sizeof(unsigned long)]     = 0;
-  pulXPECBase[REL_Adr_timer5   / sizeof(unsigned long)]     = 0;
-  pulXPECBase[REL_Adr_ec_mask0 / sizeof(unsigned long)]     = 0x0000FFFF;
-  pulXPECBase[REL_Adr_ec_mask1 / sizeof(unsigned long)]     = 0x0000FFFF;
-  pulXPECBase[REL_Adr_ec_mask2 / sizeof(unsigned long)]     = 0x0000FFFF;
-  pulXPECBase[REL_Adr_ec_mask3 / sizeof(unsigned long)]     = 0x0000FFFF;
-  pulXPECBase[REL_Adr_ec_mask4 / sizeof(unsigned long)]     = 0x0000FFFF;
-  pulXPECBase[REL_Adr_ec_mask5 / sizeof(unsigned long)]     = 0x0000FFFF;
-  pulXPECBase[REL_Adr_ec_mask6 / sizeof(unsigned long)]     = 0x0000FFFF;
-  pulXPECBase[REL_Adr_ec_mask7 / sizeof(unsigned long)]     = 0x0000FFFF;
-  pulXPECBase[REL_Adr_ec_mask8 / sizeof(unsigned long)]     = 0x0000FFFF;
-  pulXPECBase[REL_Adr_ec_mask9 / sizeof(unsigned long)]     = 0x0000FFFF;
-  pulXPECBase[REL_Adr_ec_maska / sizeof(unsigned long)]     = 0x0000FFFF;
-  pulXPECBase[REL_Adr_ec_maskb / sizeof(unsigned long)]     = 0x0000FFFF;
-
-  /* =================================================================================================== */  
-  /* Set startup values for xMAX rpu                                                                     */
-  /* =================================================================================================== */     
-  pulXMACBase[REL_Adr_xmac_config_sbu          / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_config_nibble_fifo  / sizeof(unsigned long)] = 0x00000280;
-  pulXMACBase[REL_Adr_xmac_sbu_rate_mul_add    / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_sbu_rate_mul_start  / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_start_sample_pos    / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_stop_sample_pos     / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rx_hw               / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rx_hw_count         / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rpu_count1          / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rpu_count2          / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rpm_mask0           / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rpm_val0            / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rpm_mask1           / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rpm_val1            / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rx_crc_polynomial_l / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rx_crc_polynomial_h / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rx_crc_l            / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rx_crc_h            / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_rx_crc_cfg          / sizeof(unsigned long)] = 0; 
-  pulXMACBase[REL_Adr_xmac_config_shared0      / sizeof(unsigned long)] |= MSK_xmac_config_shared0_reset_rx_fifo;
-  
-  /* =================================================================================================== */  
-  /* Set startup values for xMAX tpu                                                                     */
-  /* =================================================================================================== */     
-  pulXMACBase[REL_Adr_xmac_config_obu          / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_obu_rate_mul_add    / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_obu_rate_mul_start  / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_start_trans_pos     / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_stop_trans_pos      / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tx_hw               / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tx_hw_count         / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tpu_count1          / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tpu_count2          / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tpm_mask0           / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tpm_val0            / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tpm_mask1           / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tpm_val1            / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tx_crc_polynomial_l / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tx_crc_polynomial_h / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tx_crc_l            / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tx_crc_h            / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_tx_crc_cfg          / sizeof(unsigned long)] = 0;
-  pulXMACBase[REL_Adr_xmac_config_shared0      / sizeof(unsigned long)] |= MSK_xmac_config_shared0_reset_tx_fifo;    
-}
-
-static void XC_Start(PNETX_ETH_PORT_INFO ptPortInfo)
-{
-  volatile cyg_uint32* pulXPECBase = ptPortInfo->pulxPECBase;
-  volatile cyg_uint32* pulXMACBase = ptPortInfo->pulxMACBase;
-
-  pulXPECBase[REL_Adr_xpec_pc / sizeof(cyg_uint32 )]     = 0;
-  pulXMACBase[REL_Adr_xmac_rpu_pc / sizeof(cyg_uint32 )] = 0;
-  pulXMACBase[REL_Adr_xmac_tpu_pc / sizeof(cyg_uint32 )] = 0;  
-
-  pulXPECBase[REL_Adr_xpu_hold_pc / sizeof(cyg_uint32 )]      = 0; /* Start the xpec now */
-  pulXMACBase[REL_Adr_xmac_rpu_hold_pc / sizeof(cyg_uint32 )] = 0; /* Start the xmac rpu now */
-  pulXMACBase[REL_Adr_xmac_tpu_hold_pc / sizeof(cyg_uint32 )] = 0; /* Start the xmac rpu now */  
-}
-
-static void XC_Stop(PNETX_ETH_PORT_INFO ptPortInfo)
-{
-  volatile cyg_uint32* pulXPECBase = ptPortInfo->pulxPECBase;
-  volatile cyg_uint32* pulXMACBase = ptPortInfo->pulxMACBase;
-
-  pulXPECBase[REL_Adr_xpu_hold_pc / sizeof(cyg_uint32 )]      = MSK_xpu_hold_pc_hold;          /* Stop the xpec now */
-  pulXMACBase[REL_Adr_xmac_rpu_hold_pc / sizeof(cyg_uint32 )] = MSK_xmac_rpu_hold_pc_rpu_hold; /* Stop the xmac rpu now */
-  pulXMACBase[REL_Adr_xmac_tpu_hold_pc / sizeof(cyg_uint32 )] = MSK_xmac_tpu_hold_pc_tpu_hold; /* Stop the xmac rpu now */
-
-  pulXPECBase[REL_Adr_xpec_pc / sizeof(cyg_uint32 )]     = 0;
-  pulXMACBase[REL_Adr_xmac_rpu_pc / sizeof(cyg_uint32 )] = 0;
-  pulXMACBase[REL_Adr_xmac_tpu_pc / sizeof(cyg_uint32 )] = 0;    
 }
 
 // ///////////////////////////////////////////////////// 
@@ -530,9 +343,12 @@ void netxeth_start(struct eth_drv_sc *sc, unsigned char *enaddr, int flags)
   cyg_uint32          ulIdx;
   cyg_uint32          ulFifoOffset = 8 * ulPort;
   cyg_uint16*         pusMAC       = (cyg_uint16*)ptPortInfo->abMAC;
-  
-  XC_Reset(ptPortInfo);
-  XC_Load(ptPortInfo);
+
+  xc_reset(ptPortInfo->ulPort);
+  xc_load(ptPortInfo->ulPort, 
+          ptPortInfo->pulxPECFirmware,
+          ptPortInfo->pulxMACRPUFirmware,
+          ptPortInfo->pulxMACTPUFirmware);
 
   // local mac config
   ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_LOCAL_MAC_CONFIG) / sizeof(cyg_uint32)] = (0x8 << SRT_ETHMAC_LOCAL_MAC_CONFIG_TRAFFIC_CLASS_ARRANGEMENT);
@@ -565,7 +381,7 @@ void netxeth_start(struct eth_drv_sc *sc, unsigned char *enaddr, int flags)
   ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_LOCAL_MAC_ADDRESS_LO) / sizeof(cyg_uint32)] = (pusMAC[1] << 16) |
                                                                                                             pusMAC[0];
 
-  XC_Start(ptPortInfo);
+  xc_start(ptPortInfo->ulPort);
 
   //Wakeup phy from powerdown  
   PhyMDIO(s_abPhyAddresses[ptPortInfo->ulPort], MDIO_READ, DRV_CB12_CONTROL, &uiPhyData); 
@@ -583,7 +399,7 @@ void netxeth_stop(struct eth_drv_sc *sc)
 
   cyg_drv_interrupt_mask(ptPortInfo->ulInterrupt);
   
-  XC_Stop(ptPortInfo);
+  xc_stop(ptPortInfo->ulPort);
 
   //Put Phy into Power down mode
   PhyMDIO(s_abPhyAddresses[ptPortInfo->ulPort], MDIO_READ, DRV_CB12_CONTROL, &uiPhyData); 
@@ -945,6 +761,9 @@ bool netxeth_init(struct cyg_netdevtab_entry *tab)
   struct eth_drv_sc*  sc         = tab->device_instance;
   PNETX_ETH_PORT_INFO ptPortInfo = (PNETX_ETH_PORT_INFO)sc->driver_private;
   bool fRet = false;
+
+  if(!xc_open(ptPortInfo->ulPort))
+    return false;
  
   //TODO: Check HAL_PHYS_TO_VIRT_ADDRESS usage
   if(NULL == s_ptFifoArea)
