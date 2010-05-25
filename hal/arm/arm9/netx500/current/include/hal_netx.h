@@ -57,6 +57,7 @@
 #include <cyg/hal/regdef.h>
 #include <cyg/hal/gpio.h>
 #include <cyg/hal/vic.h>
+#include <cyg/hal/xc.h>
 
 #define ARM_NETX_CPU_CLOCK      200000000
 #define ARM_NETX_HOST_CLOCK     100000000

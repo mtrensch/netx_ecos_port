@@ -37,6 +37,16 @@ package CYGPKG_HAL_ARM_ARM9_NETX50 {
 
 }
 
+package CYGPKG_HAL_ARM_ARM9_NETX10 {
+	alias		{ "Hilscher netX10" hal_arm_arm9_netx10 }
+	directory	hal/arm/arm9/netx10
+	script		hal_arm_arm9_netx10.cdl
+	hardware
+	description "
+	The netX10 HAL package provides support for Hilscher
+	netX10 controllers."
+}
+
 target netx500_arm9_eb500hmi {
 	alias  {"Hilscher NXEB500-HMI Board" netx500_arm9_eb500hmi }
 	packages { CYGPKG_HAL_ARM
@@ -57,4 +67,14 @@ target netx500_arm9_nxhx50 {
 	}
 	description "
 	NXHX50 Board."
+}
+
+target netx10_arm9_nxhx10 {
+	alias  {"Hilscher NXHX10 Board" netx10_arm9_nxhx10 }
+	packages { CYGPKG_HAL_ARM
+		   CYGPKG_HAL_ARM_ARM9
+		   CYGPKG_HAL_ARM_ARM9_NETX10
+	}
+	description "
+	NXHX10 Board."
 }

@@ -72,17 +72,15 @@
 
 //-----------------------------------------------------------------------------
 typedef struct {
-    cyg_uint32            uiPhysicalBase;
-    volatile cyg_uint32*  puiVirtualBase;
+    volatile cyg_uint32*  pulBase;
     cyg_int32             msec_timeout;
-    cyg_uint8             bPort;
-    int         isr_vector;
+    int                   isr_vector;
 } channel_data_t;
 
 static channel_data_t s_atSerialChannels[3] = {
-    { Addr_uart0, NULL, 1000, CYGNUM_HAL_INTERRUPT_UART0 },
-    { Addr_uart1, NULL, 1000, CYGNUM_HAL_INTERRUPT_UART1 },
-    { Addr_uart2, NULL, 1000, CYGNUM_HAL_INTERRUPT_UART2 }
+    { (volatile cyg_uint32*)Addr_uart0, 1000, CYGNUM_HAL_INTERRUPT_UART0 },
+    { (volatile cyg_uint32*)Addr_uart1, 1000, CYGNUM_HAL_INTERRUPT_UART1 },
+    { (volatile cyg_uint32*)Addr_uart2, 1000, CYGNUM_HAL_INTERRUPT_UART2 }
 };
 
 #if (CYGNUM_HAL_VIRTUAL_VECTOR_CONSOLE_CHANNEL_BAUD == 9600)
@@ -102,88 +100,79 @@ static channel_data_t s_atSerialChannels[3] = {
 
 static void cyg_hal_plf_serial_init_channel(void* __ch_data)
 {
-  cyg_uint32            uiPhyBase   = ((channel_data_t*)__ch_data)->uiPhysicalBase;
-  volatile cyg_uint32*  puiVirtBase = (volatile cyg_uint32*)(hal_phys_to_virt_address(uiPhyBase, false));
-  PGPIO_REGISTERS       ptGPIORegs  = (PGPIO_REGISTERS)(hal_phys_to_virt_address(Addr_gpio, false));
-  cyg_uint32            ulIdx;
-  cyg_uint8             bPort       = ((channel_data_t*)__ch_data)->bPort;
-  
-  for(ulIdx = 0; ulIdx < 4; ulIdx++)
-    ptGPIORegs->aulConfig[bPort * 4] = 0x02;
-  
-  ((channel_data_t*)__ch_data)->puiVirtualBase = puiVirtBase;
-  
+  volatile cyg_uint32*  pulBase = ((channel_data_t*)__ch_data)->pulBase;
+
   // first, disable everything
-  puiVirtBase[REL_Adr_uartcr / sizeof(cyg_uint32)] = 0;
-    
+  pulBase[REL_Adr_uartcr / sizeof(cyg_uint32)] = 0;
+
   // Set baud rate CYGNUM_HAL_VIRTUAL_VECTOR_CONSOLE_CHANNEL_BAUD
-  puiVirtBase[REL_Adr_uartlcr_m / sizeof(cyg_uint32)] = (ARM_NETX_BAUD_DIVISOR & 0xFF00) >> 8;
-  puiVirtBase[REL_Adr_uartlcr_l / sizeof(cyg_uint32)] = ARM_NETX_BAUD_DIVISOR & 0xFF;
-   
+  pulBase[REL_Adr_uartlcr_m / sizeof(cyg_uint32)] = (ARM_NETX_BAUD_DIVISOR & 0xFF00) >> 8;
+  pulBase[REL_Adr_uartlcr_l / sizeof(cyg_uint32)] = ARM_NETX_BAUD_DIVISOR & 0xFF;
+
   // ----------v----------v----------v----------v----------
   // NOTE: MUST BE WRITTEN LAST (AFTER UARTLCR_M & UARTLCR_L)
   // ----------^----------^----------^----------^----------
   // set the UART to be 8 bits, 1 stop bit, no parity, fifo enabled
-  puiVirtBase[REL_Adr_uartcr_2 / sizeof(cyg_uint32)]  = MSK_uartcr_2_Baud_Rate_Mode;
-  puiVirtBase[REL_Adr_uartlcr_h / sizeof(cyg_uint32)] = MSK_uartlcr_h_WLEN | MSK_uartlcr_h_FEN;
+  pulBase[REL_Adr_uartcr_2 / sizeof(cyg_uint32)]  = MSK_uartcr_2_Baud_Rate_Mode;
+  pulBase[REL_Adr_uartlcr_h / sizeof(cyg_uint32)] = MSK_uartlcr_h_WLEN | MSK_uartlcr_h_FEN;
 
-  puiVirtBase[REL_Adr_uartdrvout / sizeof(cyg_uint32)] = MSK_uartdrvout_DRVTX; /* Set TX-Driver to enabled */
- 
+  pulBase[REL_Adr_uartdrvout / sizeof(cyg_uint32)] = MSK_uartdrvout_DRVTX; /* Set TX-Driver to enabled */
+
   // finally, enable the uart
-  puiVirtBase[REL_Adr_uartcr / sizeof(cyg_uint32)] = MSK_uartcr_uartEN;
+  pulBase[REL_Adr_uartcr / sizeof(cyg_uint32)] = MSK_uartcr_uartEN;
 }
 
 void cyg_hal_plf_serial_putc(void *__ch_data, char c)
 {
-  volatile cyg_uint32*  puiVirtBase = ((channel_data_t*)__ch_data)->puiVirtualBase;
+  volatile cyg_uint32*  pulBase = ((channel_data_t*)__ch_data)->pulBase;
   cyg_uint32            status;
-  
+
   CYGARC_HAL_SAVE_GP();
-  
+
   do {
-    status = puiVirtBase[REL_Adr_uartfr / sizeof(cyg_uint32)];
+    status = pulBase[REL_Adr_uartfr / sizeof(cyg_uint32)];
   } while (!TX_READY(status));	// wait until ready
 
-  puiVirtBase[REL_Adr_uartdr / sizeof(cyg_uint32)] = c;
-  
+  pulBase[REL_Adr_uartdr / sizeof(cyg_uint32)] = c;
+
   if (c == '\n') 
   {
     do 
     {
-      status = puiVirtBase[REL_Adr_uartfr / sizeof(cyg_uint32)];
+      status = pulBase[REL_Adr_uartfr / sizeof(cyg_uint32)];
     } while (!TX_READY(status));	// wait until ready
-    
-    puiVirtBase[REL_Adr_uartdr / sizeof(cyg_uint32)] = '\r';
+
+    pulBase[REL_Adr_uartdr / sizeof(cyg_uint32)] = '\r';
   }
-  
+
   CYGARC_HAL_RESTORE_GP();
 }
 
 static cyg_bool cyg_hal_plf_serial_getc_nonblock(void* __ch_data, cyg_uint8* ch)
 {
-  volatile cyg_uint32*  puiVirtBase = ((channel_data_t*)__ch_data)->puiVirtualBase;
+  volatile cyg_uint32*  pulBase = ((channel_data_t*)__ch_data)->pulBase;
   cyg_uint32  status ;
   long timeout = 100;  // A long time...
 
   do 
   {
-    status = puiVirtBase[REL_Adr_uartfr / sizeof(cyg_uint32)];
+    status = pulBase[REL_Adr_uartfr / sizeof(cyg_uint32)];
     if (--timeout == 0) 
       return false ; 
   } while (!RX_DATA(status));	// wait until ready
 
-  *ch = (cyg_uint8)(puiVirtBase[REL_Adr_uartdr / sizeof(cyg_uint32)] & 0xFF);
+  *ch = (cyg_uint8)(pulBase[REL_Adr_uartdr / sizeof(cyg_uint32)] & 0xFF);
 
-  return true;  
+  return true;
 }
 
 cyg_uint8 cyg_hal_plf_serial_getc(void* __ch_data)
 {
   cyg_uint8 ch;
   CYGARC_HAL_SAVE_GP();
-  
+
   while(!cyg_hal_plf_serial_getc_nonblock(__ch_data, &ch));
-  
+
   CYGARC_HAL_RESTORE_GP();
   return ch;
 }
@@ -191,15 +180,15 @@ cyg_uint8 cyg_hal_plf_serial_getc(void* __ch_data)
 static void cyg_hal_plf_serial_write(void* __ch_data, const cyg_uint8* __buf, cyg_uint32 __len)
 {
   CYGARC_HAL_SAVE_GP();
-  
+
   while(__len-- > 0)
       cyg_hal_plf_serial_putc(__ch_data, *__buf++);
-  
-  CYGARC_HAL_RESTORE_GP();  
+
+  CYGARC_HAL_RESTORE_GP();
 }
 
 static void cyg_hal_plf_serial_read(void* __ch_data, cyg_uint8* __buf, cyg_uint32 __len)
-{    
+{
   CYGARC_HAL_SAVE_GP();
 
   while(__len-- > 0)
@@ -217,17 +206,17 @@ cyg_bool cyg_hal_plf_serial_getc_timeout(void* __ch_data, cyg_uint8* ch)
 
   delay_count = chan->msec_timeout * 10; // delay in .1 ms steps
 
-  for(;;) 
+  for(;;)
   {
       res = cyg_hal_plf_serial_getc_nonblock(__ch_data, ch);
       if (res || 0 == delay_count--)
           break;
-      
+
       CYGACC_CALL_IF_DELAY_US(100);
   }
 
   CYGARC_HAL_RESTORE_GP();
-  return res;  
+  return res;
 }
 
 static int 
@@ -235,22 +224,22 @@ cyg_hal_plf_serial_control(void* __ch_data, __comm_control_cmd_t __func, ...)
 {
   static int            irq_state     = 0;
   channel_data_t*       chan          = (channel_data_t*)__ch_data;
-  volatile cyg_uint32*  puiVirtBase   = ((channel_data_t*)__ch_data)->puiVirtualBase;
+  volatile cyg_uint32*  pulBase       = chan->pulBase;
   int                   ret           = 0;
   cyg_uint8             status;
-  
+
   CYGARC_HAL_SAVE_GP();
-  
+
   switch (__func) 
   {
   case __COMMCTL_IRQ_ENABLE:
     irq_state = 1;
     // Ensure that only Receive ints are generated.
-    status = puiVirtBase[REL_Adr_uartcr / sizeof(cyg_uint8)];
-  
+    status = pulBase[REL_Adr_uartcr / sizeof(cyg_uint8)];
+
     status |= (MSK_uartcr_RTIE | MSK_uartcr_RIE);
-    puiVirtBase[REL_Adr_uartcr / sizeof(cyg_uint8)] = status;
-  
+    pulBase[REL_Adr_uartcr / sizeof(cyg_uint8)] = status;
+
     HAL_INTERRUPT_UNMASK(chan->isr_vector);
     break;
 
@@ -258,9 +247,9 @@ cyg_hal_plf_serial_control(void* __ch_data, __comm_control_cmd_t __func, ...)
     ret = irq_state;
     irq_state = 0;
 
-    status = puiVirtBase[REL_Adr_uartcr / sizeof(cyg_uint8)];
+    status = pulBase[REL_Adr_uartcr / sizeof(cyg_uint8)];
     status &= ~(MSK_uartcr_RTIE | MSK_uartcr_TIE | MSK_uartcr_RIE | MSK_uartcr_MSIE);
-    puiVirtBase[REL_Adr_uartcr / sizeof(cyg_uint8)] = status;
+    pulBase[REL_Adr_uartcr / sizeof(cyg_uint8)] = status;
 
     HAL_INTERRUPT_MASK(chan->isr_vector);
     break;
@@ -279,19 +268,19 @@ cyg_hal_plf_serial_control(void* __ch_data, __comm_control_cmd_t __func, ...)
     chan->msec_timeout = va_arg(ap, cyg_uint32);
 
     va_end(ap);
-  }        
+  }
   default:
       break;
   }
   CYGARC_HAL_RESTORE_GP();
-  return ret;  
+  return ret;
 }
 
 static int cyg_hal_plf_serial_isr(void *__ch_data, int* __ctrlc, CYG_ADDRWORD __vector, CYG_ADDRWORD __data)
 {
-  int                   res           = 0;
-  channel_data_t*       chan          = (channel_data_t*)__ch_data;
-  volatile cyg_uint32*  puiVirtBase   = ((channel_data_t*)__ch_data)->puiVirtualBase;
+  int                   res       = 0;
+  channel_data_t*       chan      = (channel_data_t*)__ch_data;
+  volatile cyg_uint32*  pulBase   = chan->pulBase;
   char                  c;
   cyg_uint32            status;
   CYGARC_HAL_SAVE_GP();
@@ -299,11 +288,11 @@ static int cyg_hal_plf_serial_isr(void *__ch_data, int* __ctrlc, CYG_ADDRWORD __
   cyg_drv_interrupt_acknowledge(chan->isr_vector);
 
   *__ctrlc = 0;
-  status = puiVirtBase[REL_Adr_uartfr / sizeof(cyg_uint32)];
+  status = pulBase[REL_Adr_uartfr / sizeof(cyg_uint32)];
 
   if(RX_DATA(status)) 
   {
-    c = (cyg_uint8)(puiVirtBase[REL_Adr_uartdr / sizeof(cyg_uint32)] & 0xFF);
+    c = (cyg_uint8)(pulBase[REL_Adr_uartdr / sizeof(cyg_uint32)] & 0xFF);
 
     if( cyg_hal_is_break( &c , 1 ) )
       *__ctrlc = 1;
@@ -312,7 +301,7 @@ static int cyg_hal_plf_serial_isr(void *__ch_data, int* __ctrlc, CYG_ADDRWORD __
   }
 
   CYGARC_HAL_RESTORE_GP();
-  return res;  
+  return res;
 }
 
 static void cyg_hal_plf_serial_init(void)
@@ -342,22 +331,22 @@ static void cyg_hal_plf_serial_init(void)
     CYGACC_COMM_IF_DBG_ISR_SET(*comm, cyg_hal_plf_serial_isr);
     CYGACC_COMM_IF_GETC_TIMEOUT_SET(*comm, cyg_hal_plf_serial_getc_timeout);
   }
-  
+
   // Restore original console
-  CYGACC_CALL_IF_SET_CONSOLE_COMM(cur);  
+  CYGACC_CALL_IF_SET_CONSOLE_COMM(cur);
 }
 
 void cyg_hal_plf_comms_init(void)
 {
   static int initialized = 0;
-  
+
   if(initialized)
     return;
-  
+
   initialized = 1;
-  
+
   cyg_hal_plf_serial_init();
-  
+
   #ifdef CYGDBG_HAL_DEBUG_GDB_BREAK_SUPPORT2
   cyg_hal_gdb_isr_attach();	// FIXME, hack to get CTRLC working
   #endif 
