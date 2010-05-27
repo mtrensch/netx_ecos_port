@@ -421,6 +421,9 @@ static cyg_bool LoadXCCode(cyg_uint32 ulPhysicalStart, cyg_uint32* pulRamStart, 
   cyg_uint32           uiElements;
   cyg_uint32*          pulRamEnd = pulRamStart + ulRamSize / sizeof(cyg_uint32);
 
+  if(NULL == pulXcPrg)
+    return true;
+
   /* get the number of code elements */
   uiElements = pulXcPrg[0] / sizeof(unsigned long) - 1;
 
