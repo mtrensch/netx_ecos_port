@@ -74,7 +74,7 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX10 {
         puts $::cdl_header "#define HAL_PLATFORM_EXTRA  \"\""        
     }
 
-    compile       hal_diag.c netx_misc.c
+    compile       hal_diag.c netx_misc.c netx_xc.c
 
     cdl_option CYGNUM_HAL_VIRTUAL_VECTOR_COMM_CHANNELS {
         display      "Number of communication channels on the board"
