@@ -6,9 +6,11 @@
 
 MEMORY
 {
+//    vectors : ORIGIN = 0, LENGTH = 0x300
+//    ram : ORIGIN = 0x08000300, LENGTH = 256K - 0x300
     vectors : ORIGIN = 0, LENGTH = 0x300
-    ram : ORIGIN = 0x08000300, LENGTH = 296K - 0x300
-    rom : ORIGIN = 0x09000000, LENGTH = 4M
+    ram : ORIGIN = 0x04000300, LENGTH = 256K - 0x300
+    rom : ORIGIN = 0x09000040, LENGTH = 4M - 0x40
 }
 
 SECTIONS
