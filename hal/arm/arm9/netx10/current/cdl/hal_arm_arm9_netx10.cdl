@@ -239,12 +239,28 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX10 {
            building RedBoot to place RedBoot at top of memory, leaving
            the bottom of memory (from 0x8000) to applications."
     }
+    
+    cdl_component CYG_HAL_NETX10_RAMUSAGE {
+        display       "netX 10 RAM usage templates"
+        flavor        data
+        default_value {"INTRAM"}
+        legal_values  {"INTRAM" "INTRAM_SDRAM" "SDRAM"}
+        no_define
+        description   "
+           Selects which RAM is to be used if CYG_HAL_STARTUP_RAM is used
+           INTRAM --> use INTRAM completely for code and heap (256kB)
+           INTRAM_SDRAM --> use INTRAM for code and SDRAM for heap
+           SDRAM --> use SDRAM completely for code and heap."
+    }
 
     cdl_component CYGHWR_MEMORY_LAYOUT {
         display "Memory layout"
         flavor data
         no_define
-        calculated { CYG_HAL_STARTUP == "RAM"    ? "arm_netx_ram" : \
+        calculated { CYG_HAL_STARTUP == "RAM"    ?
+                      (CYG_HAL_NETX10_RAMUSAGE == "INTRAM" ?       "arm_netx_ram" : \
+                      (CYG_HAL_NETX10_RAMUSAGE == "INTRAM_SDRAM" ? "arm_netx_intram_sdram" : \
+                                                                   "arm_netx_sdram")) : \
                      CYG_HAL_STARTUP == "ROMRAM" ? "arm_netx_romram" : \
                                                    "arm_netx_rom" }
 
@@ -253,9 +269,12 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX10 {
             flavor data
             no_define
             define -file system.h CYGHWR_MEMORY_LAYOUT_LDI
-            calculated { CYG_HAL_STARTUP == "RAM"    ? "<pkgconf/mlt_arm_netx_ram.ldi>" : \
-                         CYG_HAL_STARTUP == "ROMRAM" ? "<pkgconf/mlt_arm_netx_romram.ldi>" : \
-                                                       "<pkgconf/mlt_arm_netx_rom.ldi>" }
+            calculated { CYG_HAL_STARTUP == "RAM"    ?
+                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM" ?       "<pkgconf/mlt_arm_netx_ram.ldi" : \
+                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM_SDRAM" ? "<pkgconf/mlt_arm_netx_intram_sdram.ldi" : \
+                                                                       "<pkgconf/mlt_arm_netx_sdram.ldi")) : \
+                        CYG_HAL_STARTUP == "ROMRAM" ? "<pkgconf/mlt_arm_netx_romram.ldi" : \
+                                                      "<pkgconf/mlt_arm_netx_rom.ldi" }
         }
 
         cdl_option CYGHWR_MEMORY_LAYOUT_H {
@@ -263,9 +282,12 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX10 {
             flavor data
             no_define
             define -file system.h CYGHWR_MEMORY_LAYOUT_H
-            calculated { CYG_HAL_STARTUP == "RAM"    ? "<pkgconf/mlt_arm_netx_ram.h>" : \
-                         CYG_HAL_STARTUP == "ROMRAM" ? "<pkgconf/mlt_arm_netx_romram.h>" : \
-                                                       "<pkgconf/mlt_arm_netx_rom.h>" }
+            calculated { CYG_HAL_STARTUP == "RAM"    ?
+                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM" ?       "<pkgconf/mlt_arm_netx_ram.h" : \
+                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM_SDRAM" ? "<pkgconf/mlt_arm_netx_intram_sdram.h" : \
+                                                                       "<pkgconf/mlt_arm_netx_sdram.h")) : \
+                        CYG_HAL_STARTUP == "ROMRAM" ? "<pkgconf/mlt_arm_netx_romram.h" : \
+                                                      "<pkgconf/mlt_arm_netx_rom.h" }
         }
     }
 
