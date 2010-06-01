@@ -270,11 +270,11 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX10 {
             no_define
             define -file system.h CYGHWR_MEMORY_LAYOUT_LDI
             calculated { CYG_HAL_STARTUP == "RAM"    ?
-                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM" ?       "<pkgconf/mlt_arm_netx_ram.ldi" : \
-                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM_SDRAM" ? "<pkgconf/mlt_arm_netx_intram_sdram.ldi" : \
-                                                                       "<pkgconf/mlt_arm_netx_sdram.ldi")) : \
-                        CYG_HAL_STARTUP == "ROMRAM" ? "<pkgconf/mlt_arm_netx_romram.ldi" : \
-                                                      "<pkgconf/mlt_arm_netx_rom.ldi" }
+                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM" ?       "<pkgconf/mlt_arm_netx_ram.ldi>" : \
+                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM_SDRAM" ? "<pkgconf/mlt_arm_netx_intram_sdram.ldi>" : \
+                                                                       "<pkgconf/mlt_arm_netx_sdram.ldi>")) : \
+                        CYG_HAL_STARTUP == "ROMRAM" ? "<pkgconf/mlt_arm_netx_romram.ldi>" : \
+                                                      "<pkgconf/mlt_arm_netx_rom.ldi>" }
         }
 
         cdl_option CYGHWR_MEMORY_LAYOUT_H {
@@ -283,11 +283,11 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX10 {
             no_define
             define -file system.h CYGHWR_MEMORY_LAYOUT_H
             calculated { CYG_HAL_STARTUP == "RAM"    ?
-                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM" ?       "<pkgconf/mlt_arm_netx_ram.h" : \
-                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM_SDRAM" ? "<pkgconf/mlt_arm_netx_intram_sdram.h" : \
-                                                                       "<pkgconf/mlt_arm_netx_sdram.h")) : \
-                        CYG_HAL_STARTUP == "ROMRAM" ? "<pkgconf/mlt_arm_netx_romram.h" : \
-                                                      "<pkgconf/mlt_arm_netx_rom.h" }
+                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM" ?       "<pkgconf/mlt_arm_netx_ram.h>" : \
+                          (CYG_HAL_NETX10_RAMUSAGE == "INTRAM_SDRAM" ? "<pkgconf/mlt_arm_netx_intram_sdram.h>" : \
+                                                                       "<pkgconf/mlt_arm_netx_sdram.h>")) : \
+                        CYG_HAL_STARTUP == "ROMRAM" ? "<pkgconf/mlt_arm_netx_romram.h>" : \
+                                                      "<pkgconf/mlt_arm_netx_rom.h>" }
         }
     }
 
