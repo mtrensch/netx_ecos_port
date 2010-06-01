@@ -64,6 +64,7 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX50 {
     implements    CYGINT_HAL_VIRTUAL_VECTOR_SUPPORT
     implements    CYGINT_HAL_DEBUG_GDB_STUBS
     implements    CYGINT_HAL_DEBUG_GDB_STUBS_BREAK
+    implements    CYGINT_HAL_ARM_THUMB_ARCH
 
     define_proc {
         puts $::cdl_header "#define CYGBLD_HAL_VAR_H <cyg/hal/hal_netx.h>"

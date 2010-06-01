@@ -7,8 +7,15 @@
 #include <stddef.h>
 
 #endif
+
+/* use SDRAM for heap and INTRAM for code */
 #define CYGMEM_REGION_ram (0x80000000)
 #define CYGMEM_REGION_ram_SIZE (0x00800000)
+
+/* use INTRAM for heap and code */
+//#define CYGMEM_REGION_ram (0x08000000)
+//#define CYGMEM_REGION_ram_SIZE (0x00040000)
+
 #define CYGMEM_REGION_ram_ATTR (CYGMEM_REGION_ATTR_R | CYGMEM_REGION_ATTR_W)
 #ifndef __ASSEMBLER__
 extern char CYG_LABEL_NAME (__heap1) [];
