@@ -104,16 +104,7 @@ typedef struct {
   volatile cyg_uint32 ulStatCfg;
   volatile cyg_uint32 ulEcMaskA;
   volatile cyg_uint32 ulEcMaskB;
-  volatile cyg_uint32 ulEcMask0;
-  volatile cyg_uint32 ulEcMask1;
-  volatile cyg_uint32 ulEcMask2;
-  volatile cyg_uint32 ulEcMask3;
-  volatile cyg_uint32 ulEcMask4;
-  volatile cyg_uint32 ulEcMask5;
-  volatile cyg_uint32 ulEcMask6;
-  volatile cyg_uint32 ulEcMask7;
-  volatile cyg_uint32 ulEcMask8;
-  volatile cyg_uint32 ulEcMask9;
+  volatile cyg_uint32 aulEcMask[10];
   volatile cyg_uint32 ulTimer4;
   volatile cyg_uint32 ulTimer5;
   volatile cyg_uint32 ulIrq;

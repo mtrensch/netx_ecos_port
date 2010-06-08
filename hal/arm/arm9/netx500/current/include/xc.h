@@ -127,16 +127,7 @@ typedef struct {
   volatile unsigned long ulStatCfg;
   volatile unsigned long ulEcMaskA;
   volatile unsigned long ulEcMaskB;
-  volatile unsigned long ulEcMask0;
-  volatile unsigned long ulEcMask1;
-  volatile unsigned long ulEcMask2;
-  volatile unsigned long ulEcMask3;
-  volatile unsigned long ulEcMask4;
-  volatile unsigned long ulEcMask5;
-  volatile unsigned long ulEcMask6;
-  volatile unsigned long ulEcMask7;
-  volatile unsigned long ulEcMask8;
-  volatile unsigned long ulEcMask9;
+  volatile unsigned long aulEcMask[10];
   volatile unsigned long ulTimer4;
   volatile unsigned long ulTimer5;
   volatile unsigned long ulIrq;

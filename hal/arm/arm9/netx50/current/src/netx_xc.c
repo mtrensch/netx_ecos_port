@@ -70,23 +70,21 @@
 
 #include <string.h> // memset
 
-extern cyg_uint32 hal_phys_to_virt_address(cyg_uint32 phys, cyg_bool fCached);
-
 static volatile cyg_uint32* s_pulXpecIRQ = (volatile cyg_uint32*)Addr_xpec_irq_registers;
+
+static cyg_bool LoadXCCode(cyg_uint32 ulPhysicalStart, cyg_uint32* pulRamStart, cyg_uint32 ulRamSize, const cyg_uint32* pulXcPrg);
 
 static struct
 {
-  cyg_uint32   ulXpecPhys;
   PXPEC_AREA_T ptXpec;
-  cyg_uint32   ulXmacPhys;
   PXMAC_AREA_T ptXmac;
   cyg_bool     fOpen;
   cyg_handle_t hOpen;
 
 } s_atXCUnits[2] =
 {
- {Addr_xpec0, NULL, Addr_xmac0, NULL, false},
- {Addr_xpec1, NULL, Addr_xmac1, NULL, false},
+ {(PXPEC_AREA_T)Addr_xpec0, (PXMAC_AREA_T)Addr_xmac0, false, 0},
+ {(PXPEC_AREA_T)Addr_xpec1, (PXMAC_AREA_T)Addr_xmac1, false, 0},
 };
 
 static cyg_bool IsValidXCUnit(cyg_uint32 ulUnit)
@@ -126,16 +124,6 @@ cyg_bool xc_open(cyg_uint32 ulUnit)
 
   } else
   {
-    if(NULL == s_atXCUnits[ulUnit].ptXpec)
-    {
-      s_atXCUnits[ulUnit].ptXpec = (PXPEC_AREA_T)hal_phys_to_virt_address(s_atXCUnits[ulUnit].ulXpecPhys, false);;
-    }
-
-    if(NULL == s_atXCUnits[ulUnit].ptXmac)
-    {
-      s_atXCUnits[ulUnit].ptXmac = (PXMAC_AREA_T)hal_phys_to_virt_address(s_atXCUnits[ulUnit].ulXmacPhys, false);
-    }
-
     s_atXCUnits[ulUnit].fOpen = true;
     s_atXCUnits[ulUnit].hOpen = cyg_thread_self();
 
@@ -209,6 +197,74 @@ cyg_bool xc_stop(cyg_uint32 ulUnit)
   return fRet;
 }
 
+static const cyg_uint32 XcCode_rpu_reset0[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x1c060000, 0x00fc0001, 0x995fdc01, 0x00f80041, 0x995fdc02, 0x00e00000, 0x001fdc03, 0x00fcfffd, 
+  0x994fe084, 0x00fffffd, 0x995fdc05, 0x010bfffd, 0x995fdc06, 0x010c0001, 0x995fdc07, 0x010ffffd, 
+  0x995fdc08, 0x01080001, 0x995fdc09, 0x010c0001, 0x995fdc0a, 0x00f80001, 0x995fdc0b, 0x00fdfffd, 
+  0x995fdc0c, 0x00fcfffd, 0x995fdc0d, 0x00fc7ffd, 0x995fdc0e, 0x00fc3ffd, 0x995fdc0f, 0x00fc1ffd, 
+  0x995fdc10, 0x00fc0ffd, 0x995fdc11, 0x00fc07fd, 0x995fdc12, 0x00fc03fd, 0x995fdc13, 0x00fc01fd, 
+  0x995fdc14, 0x00fc00fd, 0x995fdc15, 0x00fc007d, 0x995fdc16, 0x00fc003d, 0x995fdc17, 0x00fc001d, 
+  0x995fdc18, 0x00fc000d, 0x995fdc19, 0x00fc0005, 0x995fdc1a, 0x00e00000, 0x001fdc1a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32 XcCode_rpu_reset1[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x1c061000, 0x00fc0001, 0x995fdc01, 0x00f80041, 0x995fdc02, 0x00e00000, 0x001fdc03, 0x00fcfffd, 
+  0x994fe084, 0x00fffffd, 0x995fdc05, 0x010bfffd, 0x995fdc06, 0x010c0001, 0x995fdc07, 0x010ffffd, 
+  0x995fdc08, 0x01080001, 0x995fdc09, 0x010c0001, 0x995fdc0a, 0x00f80001, 0x995fdc0b, 0x00fdfffd, 
+  0x995fdc0c, 0x00fcfffd, 0x995fdc0d, 0x00fc7ffd, 0x995fdc0e, 0x00fc3ffd, 0x995fdc0f, 0x00fc1ffd, 
+  0x995fdc10, 0x00fc0ffd, 0x995fdc11, 0x00fc07fd, 0x995fdc12, 0x00fc03fd, 0x995fdc13, 0x00fc01fd, 
+  0x995fdc14, 0x00fc00fd, 0x995fdc15, 0x00fc007d, 0x995fdc16, 0x00fc003d, 0x995fdc17, 0x00fc001d, 
+  0x995fdc18, 0x00fc000d, 0x995fdc19, 0x00fc0005, 0x995fdc1a, 0x00e00000, 0x001fdc1a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32 XcCode_tpu_reset0[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x1c060400, 0x01140001, 0x995fdc01, 0x01100641, 0x995fdc02, 0x00e00000, 0x001fdc03, 0x0114fffd, 
+  0x994fe384, 0x0117fffd, 0x995fdc05, 0x0123fffd, 0x995fdc06, 0x01240001, 0x995fdc07, 0x0127fffd, 
+  0x995fdc08, 0x01200001, 0x995fdc09, 0x01240001, 0x995fdc0a, 0x01100601, 0x995fdc0b, 0x0115fffd, 
+  0x995fdc0c, 0x0114fffd, 0x995fdc0d, 0x01147ffd, 0x995fdc0e, 0x01143ffd, 0x995fdc0f, 0x01141ffd, 
+  0x995fdc10, 0x01140ffd, 0x995fdc11, 0x011407fd, 0x995fdc12, 0x011403fd, 0x995fdc13, 0x011401fd, 
+  0x995fdc14, 0x011400fd, 0x995fdc15, 0x0114007d, 0x995fdc16, 0x0114003d, 0x995fdc17, 0x0114001d, 
+  0x995fdc18, 0x0114000d, 0x995fdc19, 0x01140005, 0x995fdc1a, 0x00e00000, 0x001fdc1a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32 XcCode_tpu_reset1[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x1c061400, 0x01140001, 0x995fdc01, 0x01100641, 0x995fdc02, 0x00e00000, 0x001fdc03, 0x0114fffd, 
+  0x994fe384, 0x0117fffd, 0x995fdc05, 0x0123fffd, 0x995fdc06, 0x01240001, 0x995fdc07, 0x0127fffd, 
+  0x995fdc08, 0x01200001, 0x995fdc09, 0x01240001, 0x995fdc0a, 0x01100601, 0x995fdc0b, 0x0115fffd, 
+  0x995fdc0c, 0x0114fffd, 0x995fdc0d, 0x01147ffd, 0x995fdc0e, 0x01143ffd, 0x995fdc0f, 0x01141ffd, 
+  0x995fdc10, 0x01140ffd, 0x995fdc11, 0x011407fd, 0x995fdc12, 0x011403fd, 0x995fdc13, 0x011401fd, 
+  0x995fdc14, 0x011400fd, 0x995fdc15, 0x0114007d, 0x995fdc16, 0x0114003d, 0x995fdc17, 0x0114001d, 
+  0x995fdc18, 0x0114000d, 0x995fdc19, 0x01140005, 0x995fdc1a, 0x00e00000, 0x001fdc1a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32* s_paulxMacRpuCodes[2]=
+{
+  XcCode_rpu_reset0,
+  XcCode_rpu_reset1
+};
+
+static const cyg_uint32* s_paulxMacTpuCodes[2]=
+{
+  XcCode_tpu_reset0,
+  XcCode_tpu_reset1
+};
+
 cyg_bool xc_reset(cyg_uint32 ulUnit)
 {
   cyg_bool fRet = false;
@@ -217,210 +273,162 @@ cyg_bool xc_reset(cyg_uint32 ulUnit)
   {
     PXPEC_AREA_T ptXpec = s_atXCUnits[ulUnit].ptXpec;
     PXMAC_AREA_T ptXmac = s_atXCUnits[ulUnit].ptXmac;
-    cyg_uint32   uIdx;
+    cyg_uint32   ulIdx;
+    
+    fRet = true;
 
-    ptXpec->ulXpuHoldPc    = 1;                                       /* Hold the Program Counter */
-    ptXpec->aulStatCfg[ulUnit] = 0x08500000;                         /* Reset IO.OE asap */
-    ptXmac->ulTpuHoldPc = MSK_xmac_tpu_hold_pc_tpu_hold;              /* Just set Hold-Bit */
-    ptXmac->ulRpuHoldPc = MSK_xmac_rpu_hold_pc_rpu_hold;              /* Just set Hold-Bit */
-    ptXpec->aulStatCfg[ulUnit] = 0x08500000;                         /* Reset IO.OE asap */
-    ptXmac->ulConfigObu = 0x00000180;                                 /* Reset TX.OE asap */
+    ptXpec->ulXpuHoldPc         = 1;                                   /* Hold the Program Counter */
+    ptXpec->aulStatCfg[ulUnit]  = 0x08500000;                          /* Reset IO.OE asap */
+    ptXmac->ulTpuHoldPc         = MSK_xmac_tpu_hold_pc_tpu_hold;  /* Just set Hold-Bit */
+    ptXmac->ulRpuHoldPc         = MSK_xmac_rpu_hold_pc_rpu_hold;  /* Just set Hold-Bit */
+    ptXpec->aulStatCfg[ulUnit]  = 0x08500000;                          /* Reset IO.OE asap */
 
-    for(uIdx = 0; uIdx < XPEC_DWORD_RAMSIZE; uIdx++)
-      ptXpec->aulPRam[uIdx] = 0xC0FFF000;                             /* Use the command wait b111111111111,b000000000000 at all addresses */
+    /* load ratemul reset code */
+    LoadXCCode((cyg_uint32)ptXmac,
+               (cyg_uint32*)ptXmac,
+               sizeof(*ptXmac),
+               s_paulxMacRpuCodes[ulUnit]);
+               
+    LoadXCCode((cyg_uint32)ptXmac,
+               (cyg_uint32*)ptXmac,
+               sizeof(*ptXmac),
+               s_paulxMacTpuCodes[ulUnit]);
 
-    ptXpec->ulPc           = 0x7ff;                                   /* Reset the Program Counter to 0x7ff */
+    ptXmac->ulRpuPc      = 0; /* Reset PC to 0 */
+    ptXmac->ulTpuPc      = 0; /* Reset PC to 0 */
+    ptXmac->ulTpuHoldPc  = 0; /* Clear Hold-Bit */
+    ptXmac->ulTpuHoldPc  = 0; /* Clear Hold-Bit */
 
-    ptXpec->ulStatCfg      = 0;                                       /* Reset Timer operation and DMA */
-    ptXpec->aulRam[0x7FF]  = 0x7F;                                    /* Link and Stop DMA */
+    /* !!!! ATTENTION: There must be enougth time between starting xMAC and stopping xMAC to execute reset programm */
+    
+    /* reset xPEC ALU */
+    for( ulIdx = 0; ulIdx < XPEC_DWORD_RAMSIZE; ulIdx++ )
+      ptXpec->aulPRam[ulIdx] = 0xC0FFF000; /* Use the command wait b111111111111,b000000000000 at all addresses */
 
-    /* let the XC run for at least 10 cycles */
-    for(uIdx = 0; uIdx < 10; uIdx++)
-      ptXpec->ulXpuHoldPc = 0;
+    ptXpec->ulPc           = 0x7ff; /* Reset the Program Counter to 0x7ff */
+    ptXpec->ulStatCfg      = 0; /* Reset Timer operation and DMA */
+    ptXpec->aulRam[0x7FF]  = 0x7F; /* Link and Stop DMA */
 
-    ptXpec->ulXpuHoldPc = 1;                                          /* Hold the Program Counter */
-    ptXpec->ulPc        = 0x7ff;                                      /* Reset the Program Counter to 0x7ff */
-
-    /* reset all registers */
-    for(uIdx = 0; uIdx < 8; ++uIdx)
-      ptXpec->aulR[uIdx]   = 0;
-
+    for(ulIdx = 0; ulIdx < 10; ulIdx++)
+      ptXpec->ulXpuHoldPc = 0; /* let the XC run for at least 10 cycles */
+ 
+    ptXpec->ulXpuHoldPc    = 1; /* Hold the Program Counter */
+    ptXpec->ulPc           = 0x7ff; /* Reset the Program Counter to 0x7ff */
+    
+    /* reset all xPEC registers */
+    for(ulIdx = 0; ulIdx < 8; ulIdx++)
+      ptXpec->aulR[ulIdx] = 0;
     ptXpec->ulRange01   = 0;
     ptXpec->ulRange23   = 0;
     ptXpec->ulRange45   = 0;
     ptXpec->ulRange67   = 0;
-
-    ptXpec->ulUrxCount  = 0;
-    ptXpec->ulUtxCount  = 0;
-    ptXpec->ulStatCfg   = 0;
-    ptXpec->ulTimer0    = 0;                                             /* Stop all Timers */
+    ptXpec->ulTimer0    = 0;
     ptXpec->ulTimer1    = 0;
     ptXpec->ulTimer2    = 0;
     ptXpec->ulTimer3    = 0;
+    ptXpec->ulUrxCount  = 0;
+    ptXpec->ulUtxCount  = 0;
+    ptXpec->ulStatCfg   = 0;
     ptXpec->ulTimer4    = 0;
     ptXpec->ulTimer5    = 0;
 
-    /* Reset the event controller if the XC was stopped on a wait 
-       This will program an IRQ event to branch to address 0.
-       The command at address 0 is an endless loop */
-    ptXpec->ulEcMask0   = 0x1000E0E0;
-    ptXpec->ulEcMask1   = 0x1000E0E0;
-    ptXpec->ulEcMask2   = 0x1000E0E0;
-    ptXpec->ulEcMask3   = 0x1000E0E0;
-    ptXpec->ulEcMask4   = 0x1000E0E0;
-    ptXpec->ulEcMask5   = 0x1000E0E0;
-    ptXpec->ulEcMask6   = 0x1000E0E0;
-    ptXpec->ulEcMask7   = 0x1000E0E0;
-    ptXpec->ulEcMask8   = 0x1000E0E0;
-    ptXpec->ulEcMask9   = 0x1000E0E0;
-    ptXpec->ulEcMaskA   = 0x1000E0E0;
-    ptXpec->ulEcMaskB   = 0x1000E0E0;
-
-    ptXpec->aulPRam[0]  = 0xbe000000;
-
-    ptXpec->ulXpuHoldPc = 0;
+    /* Reset the event controller if the XC was stopped on a wait.
+      This will program an IRQ event to branch to address 0.
+      The command at address 0 is an endless loop */
+    for(ulIdx = 0; ulIdx < 10; ulIdx++)
+      ptXpec->aulEcMask[ulIdx] = 0x1000E0E0;
+    ptXpec->ulEcMaskA    = 0x1000E0E0;
+    ptXpec->ulEcMaskB    = 0x1000E0E0;
+    ptXpec->aulPRam[0]   = 0xbe000000;  
+    ptXpec->ulXpuHoldPc  = 0;
 
     /* Signal IRQ to XPEC */
     s_pulXpecIRQ[ulUnit] = 0x00010000;
 
     /* let the XC run for at least 10 cycles */
-    for(uIdx = 0; uIdx < 10; uIdx++)
+    for( ulIdx = 0; ulIdx < 10; ulIdx++ )
       ptXpec->ulXpuHoldPc = 0;
 
-    ptXpec->ulXpuHoldPc = 1;                                          /* Hold the Program Counter */
-    ptXpec->ulPc        = 0x7ff;                                      /* Reset the Program Counter to 0x7ff */
-
-    ptXpec->ulIrq       = 0xFFFF0000;                                       /* Clear XPEC side IRQ request lines */
-
-    ptXpec->ulEcMask0   = 0x0000FFFF; /* Reset events */
-    ptXpec->ulEcMask1   = 0x0000FFFF;
-    ptXpec->ulEcMask2   = 0x0000FFFF;
-    ptXpec->ulEcMask3   = 0x0000FFFF;
-    ptXpec->ulEcMask4   = 0x0000FFFF;
-    ptXpec->ulEcMask5   = 0x0000FFFF;
-    ptXpec->ulEcMask6   = 0x0000FFFF;
-    ptXpec->ulEcMask7   = 0x0000FFFF;
-    ptXpec->ulEcMask8   = 0x0000FFFF;
-    ptXpec->ulEcMask9   = 0x0000FFFF;
-    ptXpec->ulEcMaskA   = 0x0000FFFF;
-    ptXpec->ulEcMaskB   = 0x0000FFFF;
-
-    ptXpec->ulAdc = 0;
-
+    ptXpec->ulXpuHoldPc = 1; /* Hold the Program Counter */
+    ptXpec->ulPc        = 0x7ff; /* Reset the Program Counter to 0x7ff */
+    ptXpec->ulIrq       = 0xFFFF0000; /* Clear XPEC side IRQ request lines */
+    
+    /* reset events */
+    for(ulIdx = 0; ulIdx < 10; ulIdx++)
+      ptXpec->aulEcMask[ulIdx] = 0x0000FFFF;
+    ptXpec->ulEcMaskA = 0x0000FFFF;
+    ptXpec->ulEcMaskB = 0x0000FFFF;
+    ptXpec->ulAdc     = 0; 
+    
     /* Reset SR0-3 for XC0, SR4-7 for XC1 */
-    for(uIdx = 4 * ulUnit; uIdx < 4 * ulUnit + 4; ++uIdx)
-      ptXpec->aulSr[uIdx] = 0;
-
+    for( ulIdx = 4 * ulUnit; ulIdx < 4 * ulUnit + 4; ++ulIdx )
+      ptXpec->aulSr[ulIdx] = 0;
     /* Reset SR8-11 for XC0, SR12-15 for XC1 */
-    for(uIdx = 8 + 4 * ulUnit; uIdx < 12 + 4 * ulUnit; ++uIdx)
-      ptXpec->aulSr[uIdx] = 0;
+    for( ulIdx = 8 + 4 * ulUnit; ulIdx < 12 + 4 * ulUnit; ++ulIdx )
+      ptXpec->aulSr[ulIdx] = 0;
 
-    /* reset urx and utx */
-    switch(ulUnit)                                                      /* Set Reset-Flag for FIFO */
-    {
-    case 0: 
-      ptXmac->ulConfigShared0 |=MSK_xmac_config_shared0_reset_tx_fifo;
-      ptXmac->ulConfigShared0 &= ~MSK_xmac_config_shared0_reset_tx_fifo;
-      ptXmac->ulConfigShared0 |=MSK_xmac_config_shared0_reset_rx_fifo; 
-      ptXmac->ulConfigShared0 &= ~MSK_xmac_config_shared0_reset_rx_fifo;
-    break;
+    /* hold xMAC */
+    ptXmac->ulTpuHoldPc = MSK_xmac_tpu_hold_pc_tpu_hold;
+    ptXmac->ulRpuHoldPc = MSK_xmac_rpu_hold_pc_rpu_hold;
 
-    case 1: 
-      ptXmac->ulConfigShared1 |=MSK_xmac_config_shared1_reset_tx_fifo;
-      ptXmac->ulConfigShared1 &= ~MSK_xmac_config_shared1_reset_tx_fifo;
-      ptXmac->ulConfigShared1 |=MSK_xmac_config_shared0_reset_rx_fifo; 
-      ptXmac->ulConfigShared1 &= ~MSK_xmac_config_shared0_reset_rx_fifo;
-    break;
-    }
-
-    ptXpec->ulIrq  = 0xffff0000;   /* confirm all ARM IRQs */
-    ptXpec->ulAdc  = 0;
-
-    /* Clear ARM side IRQ request lines */
+    /* reset IRQs from ARM side */ 
     s_pulXpecIRQ[ulUnit] = 0x0000FFFF;
 
+    /* reset urx and utx fifos */
+    switch( ulUnit )
+    {
+      case 0: 
+        ptXmac->ulConfigShared0 |=MSK_xmac_config_shared0_reset_tx_fifo;
+        ptXmac->ulConfigShared0 &= ~MSK_xmac_config_shared0_reset_tx_fifo;
+        ptXmac->ulConfigShared0 |=MSK_xmac_config_shared0_reset_rx_fifo; 
+        ptXmac->ulConfigShared0 &= ~MSK_xmac_config_shared0_reset_rx_fifo;
+        break;
+      case 1:
+        ptXmac->ulConfigShared1 |=MSK_xmac_config_shared1_reset_tx_fifo;
+        ptXmac->ulConfigShared1 &= ~MSK_xmac_config_shared1_reset_tx_fifo;
+        ptXmac->ulConfigShared1 |=MSK_xmac_config_shared1_reset_rx_fifo; 
+        ptXmac->ulConfigShared1 &= ~MSK_xmac_config_shared1_reset_rx_fifo;
+        break;
+    }
+
     /* reset all xMAC registers to default values */
-    ptXmac->ulRxHw              = 0;
-    ptXmac->ulRxHwCount         = 0;
-    ptXmac->ulTx                = 0;
-    ptXmac->ulTxHw              = 0;
-    ptXmac->ulTxHwCount         = 0;
-    ptXmac->ulTxSend            = 0;
-    ptXmac->aulWr[0]            = 0;
-    ptXmac->aulWr[1]            = 0;
-    ptXmac->aulWr[2]            = 0;
-    ptXmac->aulWr[3]            = 0;
-    ptXmac->aulWr[4]            = 0;
-    ptXmac->aulWr[5]            = 0;
-    ptXmac->aulWr[6]            = 0;
-    ptXmac->aulWr[7]            = 0;
-    ptXmac->aulWr[8]            = 0;
-    ptXmac->aulWr[9]            = 0;
-    ptXmac->ulConfigMii         = 0;
-    ptXmac->ulConfigNibbleFifo  = 0x00000600;
-    ptXmac->ulConfigSbu         = 0x00000080;
-    ptXmac->ulStartSamplePos    = 0;
-    ptXmac->ulStopSamplePos     = 0;
-    ptXmac->ulStartTransPos     = 0;
-    ptXmac->ulStopTransPos      = 0;
-    ptXmac->ulRpuCount1         = 0;
-    ptXmac->ulRpuCount2         = 0;
-    ptXmac->ulTpuCount1         = 0;
-    ptXmac->ulTpuCount2         = 0;
-    ptXmac->ulRxCount           = 0;
-    ptXmac->ulTxCount           = 0;
-    ptXmac->ulRpmMask0          = 0;
-    ptXmac->ulRpmVal0           = 0;
-    ptXmac->ulRpmMask1          = 0;
-    ptXmac->ulRpmVal1           = 0;
-    ptXmac->ulTpmMask0          = 0;
-    ptXmac->ulTpmVal0           = 0;
-    ptXmac->ulTpmMask1          = 0;
-    ptXmac->ulTpmVal1           = 0;
-    ptXmac->ulRxCrcPolynomialL  = 0;
-    ptXmac->ulRxCrcPolynomialH  = 0;
-    ptXmac->ulRxCrcL            = 0;
-    ptXmac->ulRxCrcH            = 0;
-    ptXmac->ulRxCrcCfg          = 0;
-    ptXmac->ulTxCrcPolynomialL  = 0;
-    ptXmac->ulTxCrcPolynomialH  = 0;
-    ptXmac->ulTxCrcL            = 0;
-    ptXmac->ulTxCrcH            = 0;
-    ptXmac->ulTxCrcCfg          = 0;
-
-    /* reset rate multipliers */
-    ptXmac->aulRpuProgram[0]    = 0x00e00000;                            /* endless loop */
-    ptXmac->aulRpuProgram[1]    = 0x001fdc00;
-    ptXmac->aulTpuProgram[0]    = 0x00e00000;                            /* endless loop */
-    ptXmac->aulTpuProgram[1]    = 0x001fdc00;
-
-    ptXmac->ulRpuPc             = 0;
-    ptXmac->ulTpuPc             = 0;
-
-    ptXmac->ulObuRateMulStart   = 0;
-    ptXmac->ulObuRateMulAdd     = 1;                                      /* Reset the Rate Multiplier Add Value */
-    ptXmac->ulSbuRateMulStart   = 0;
-    ptXmac->ulSbuRateMulAdd     = 1;                                      /* Reset the Rate Multiplier Add Value */
-
-    while (ptXmac->ulObuRateMul != 0xffff)                          /* wait until rate mul has stopped */
-    {
-      ptXmac->ulTpuHoldPc = 0;                                      /* every 5 cycles check if ratemul has reached end */
-      ptXmac->ulTpuHoldPc = 0;
-      ptXmac->ulTpuHoldPc = 0;
-      ptXmac->ulTpuHoldPc = 0;
-      ptXmac->ulTpuHoldPc = 0;
-      ptXmac->ulTpuHoldPc = MSK_xmac_tpu_hold_pc_tpu_hold;           /* Just set Hold-Bit */
-    }
-
-    while (ptXmac->ulSbuRateMul != 0xffff)                            /* wait until rate mul has stopped */
-    {
-      ptXmac->ulRpuHoldPc = 0;                                      /* every 5 cycles check if ratemul has reached end */
-      ptXmac->ulRpuHoldPc = 0;
-      ptXmac->ulRpuHoldPc = 0;
-      ptXmac->ulRpuHoldPc = 0;
-      ptXmac->ulRpuHoldPc = 0;
-      ptXmac->ulRpuHoldPc = MSK_xmac_rpu_hold_pc_rpu_hold;           /* Just set Hold-Bit */
-    }
+    ptXmac->ulRxHw               = 0;
+    ptXmac->ulRxHwCount          = 0;
+    ptXmac->ulTx                 = 0;
+    ptXmac->ulTxHw               = 0;
+    ptXmac->ulTxHwCount          = 0;
+    ptXmac->ulTxSend             = 0;
+    for(ulIdx = 0; ulIdx < 10; ulIdx++)
+      ptXmac->aulWr[ulIdx]       = 0;
+    ptXmac->ulConfigMii          = 0;
+    ptXmac->ulConfigNibbleFifo   = 0x00000600;
+    ptXmac->ulRpuCount1          = 0;
+    ptXmac->ulRpuCount2          = 0;
+    ptXmac->ulTpuCount1          = 0;
+    ptXmac->ulTpuCount2          = 0;
+    ptXmac->ulRxCount            = 0;
+    ptXmac->ulTxCount            = 0;
+    ptXmac->ulRpmMask0           = 0;
+    ptXmac->ulRpmVal0            = 0;
+    ptXmac->ulRpmMask1           = 0;
+    ptXmac->ulRpmVal1            = 0;
+    ptXmac->ulTpmMask0           = 0;
+    ptXmac->ulTpmVal0            = 0;
+    ptXmac->ulTpmMask1           = 0;
+    ptXmac->ulTpmVal1            = 0;
+    ptXmac->ulRxTxNofBits        = 0x00000088;
+    ptXmac->ulRxCrcPolynomialL   = 0;
+    ptXmac->ulRxCrcPolynomialH   = 0;
+    ptXmac->ulRxCrcL             = 0;
+    ptXmac->ulRxCrcH             = 0;
+    ptXmac->ulRxCrcCfg           = 0;
+    ptXmac->ulTxCrcPolynomialL   = 0;
+    ptXmac->ulTxCrcPolynomialH   = 0;
+    ptXmac->ulTxCrcL             = 0;
+    ptXmac->ulTxCrcH             = 0;
+    ptXmac->ulTxCrcCfg           = 0;
+    ptXmac->ulRpuPc              = 0;
+    ptXmac->ulTpuPc              = 0;
   }
 
   return fRet;
@@ -433,6 +441,10 @@ static cyg_bool LoadXCCode(cyg_uint32 ulPhysicalStart, cyg_uint32* pulRamStart, 
   cyg_uint32           uiElements;
   cyg_uint32*          pulRamEnd = pulRamStart + ulRamSize / sizeof(cyg_uint32);
 
+  /* Allow loading a single unit, by passing NULL pointers to xc_load */
+  if(NULL == pulXcPrg)
+    return true;
+  
   /* get the number of code elements */
   uiElements = pulXcPrg[0] / sizeof(unsigned long) - 1;
 
@@ -501,17 +513,17 @@ cyg_bool xc_load(cyg_uint32 ulUnit, const cyg_uint32* pulXPEC, const cyg_uint32*
 {
   cyg_bool fRet = false;
 
-  if(!LoadXCCode(s_atXCUnits[ulUnit].ulXpecPhys, 
+  if(!LoadXCCode((cyg_uint32)s_atXCUnits[ulUnit].ptXpec, 
                  (cyg_uint32*)s_atXCUnits[ulUnit].ptXpec, 
                  sizeof(*s_atXCUnits[ulUnit].ptXpec), 
                  pulXPEC))
   {
-  } else if(!LoadXCCode(s_atXCUnits[ulUnit].ulXmacPhys, 
+  } else if(!LoadXCCode((cyg_uint32)s_atXCUnits[ulUnit].ptXmac, 
                         (cyg_uint32*)s_atXCUnits[ulUnit].ptXmac, 
                         sizeof(*s_atXCUnits[ulUnit].ptXmac), 
                         pulXMACTPU))
   {
-  } else if(!LoadXCCode(s_atXCUnits[ulUnit].ulXmacPhys, 
+  } else if(!LoadXCCode((cyg_uint32)s_atXCUnits[ulUnit].ptXmac, 
                         (cyg_uint32*)s_atXCUnits[ulUnit].ptXmac, 
                         sizeof(*s_atXCUnits[ulUnit].ptXmac), 
                         pulXMACRPU))

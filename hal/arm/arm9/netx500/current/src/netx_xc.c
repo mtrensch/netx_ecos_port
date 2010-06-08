@@ -71,6 +71,7 @@
 #include <string.h> // memset
 
 extern cyg_uint32 hal_phys_to_virt_address(cyg_uint32 phys, cyg_bool fCached);
+static cyg_bool LoadXCCode(cyg_uint32 ulPhysicalStart, cyg_uint32* pulRamStart, cyg_uint32 ulRamSize, const cyg_uint32* pulXcPrg);
 
 static volatile cyg_uint32* s_pulXpecIRQ = (volatile cyg_uint32*)Addr_xpec_irq_registers;
 
@@ -211,6 +212,135 @@ cyg_bool xc_stop(cyg_uint32 ulUnit)
   return fRet;
 }
 
+static const cyg_uint32 XcCode_rpu_reset0[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x00160000, 0x00f80001, 0x915fdb81, 0x00f40041, 0x915fdb82, 0x00dc0000, 0x001fdb83, 0x00f8fffd, 
+  0x914fe004, 0x00fbfffd, 0x915fdb85, 0x0107fffd, 0x915fdb86, 0x01080001, 0x915fdb87, 0x010bfffd, 
+  0x915fdb88, 0x01040001, 0x915fdb89, 0x01080001, 0x915fdb8a, 0x00f40001, 0x915fdb8b, 0x00f9fffd, 
+  0x915fdb8c, 0x00f8fffd, 0x915fdb8d, 0x00f87ffd, 0x915fdb8e, 0x00f83ffd, 0x915fdb8f, 0x00f81ffd, 
+  0x915fdb90, 0x00f80ffd, 0x915fdb91, 0x00f807fd, 0x915fdb92, 0x00f803fd, 0x915fdb93, 0x00f801fd, 
+  0x915fdb94, 0x00f800fd, 0x915fdb95, 0x00f8007d, 0x915fdb96, 0x00f8003d, 0x915fdb97, 0x00f8001d, 
+  0x915fdb98, 0x00f8000d, 0x915fdb99, 0x00f80005, 0x915fdb9a, 0x00dc0000, 0x001fdb9a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32 XcCode_rpu_reset1[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x00161000, 0x00f80001, 0x915fdb81, 0x00f40041, 0x915fdb82, 0x00dc0000, 0x001fdb83, 0x00f8fffd, 
+  0x914fe004, 0x00fbfffd, 0x915fdb85, 0x0107fffd, 0x915fdb86, 0x01080001, 0x915fdb87, 0x010bfffd, 
+  0x915fdb88, 0x01040001, 0x915fdb89, 0x01080001, 0x915fdb8a, 0x00f40001, 0x915fdb8b, 0x00f9fffd, 
+  0x915fdb8c, 0x00f8fffd, 0x915fdb8d, 0x00f87ffd, 0x915fdb8e, 0x00f83ffd, 0x915fdb8f, 0x00f81ffd, 
+  0x915fdb90, 0x00f80ffd, 0x915fdb91, 0x00f807fd, 0x915fdb92, 0x00f803fd, 0x915fdb93, 0x00f801fd, 
+  0x915fdb94, 0x00f800fd, 0x915fdb95, 0x00f8007d, 0x915fdb96, 0x00f8003d, 0x915fdb97, 0x00f8001d, 
+  0x915fdb98, 0x00f8000d, 0x915fdb99, 0x00f80005, 0x915fdb9a, 0x00dc0000, 0x001fdb9a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32 XcCode_rpu_reset2[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x00162000, 0x00f80001, 0x915fdb81, 0x00f40041, 0x915fdb82, 0x00dc0000, 0x001fdb83, 0x00f8fffd, 
+  0x914fe004, 0x00fbfffd, 0x915fdb85, 0x0107fffd, 0x915fdb86, 0x01080001, 0x915fdb87, 0x010bfffd, 
+  0x915fdb88, 0x01040001, 0x915fdb89, 0x01080001, 0x915fdb8a, 0x00f40001, 0x915fdb8b, 0x00f9fffd, 
+  0x915fdb8c, 0x00f8fffd, 0x915fdb8d, 0x00f87ffd, 0x915fdb8e, 0x00f83ffd, 0x915fdb8f, 0x00f81ffd, 
+  0x915fdb90, 0x00f80ffd, 0x915fdb91, 0x00f807fd, 0x915fdb92, 0x00f803fd, 0x915fdb93, 0x00f801fd, 
+  0x915fdb94, 0x00f800fd, 0x915fdb95, 0x00f8007d, 0x915fdb96, 0x00f8003d, 0x915fdb97, 0x00f8001d, 
+  0x915fdb98, 0x00f8000d, 0x915fdb99, 0x00f80005, 0x915fdb9a, 0x00dc0000, 0x001fdb9a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32 XcCode_rpu_reset3[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x00163000, 0x00f80001, 0x915fdb81, 0x00f40041, 0x915fdb82, 0x00dc0000, 0x001fdb83, 0x00f8fffd, 
+  0x914fe004, 0x00fbfffd, 0x915fdb85, 0x0107fffd, 0x915fdb86, 0x01080001, 0x915fdb87, 0x010bfffd, 
+  0x915fdb88, 0x01040001, 0x915fdb89, 0x01080001, 0x915fdb8a, 0x00f40001, 0x915fdb8b, 0x00f9fffd, 
+  0x915fdb8c, 0x00f8fffd, 0x915fdb8d, 0x00f87ffd, 0x915fdb8e, 0x00f83ffd, 0x915fdb8f, 0x00f81ffd, 
+  0x915fdb90, 0x00f80ffd, 0x915fdb91, 0x00f807fd, 0x915fdb92, 0x00f803fd, 0x915fdb93, 0x00f801fd, 
+  0x915fdb94, 0x00f800fd, 0x915fdb95, 0x00f8007d, 0x915fdb96, 0x00f8003d, 0x915fdb97, 0x00f8001d, 
+  0x915fdb98, 0x00f8000d, 0x915fdb99, 0x00f80005, 0x915fdb9a, 0x00dc0000, 0x001fdb9a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32 XcCode_tpu_reset0[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x00160400, 0x01100001, 0x915fdb81, 0x010c0641, 0x915fdb82, 0x00dc0000, 0x001fdb83, 0x0110fffd, 
+  0x914fe304, 0x0113fffd, 0x915fdb85, 0x011ffffd, 0x915fdb86, 0x01200001, 0x915fdb87, 0x0123fffd, 
+  0x915fdb88, 0x011c0001, 0x915fdb89, 0x01200001, 0x915fdb8a, 0x010c0601, 0x915fdb8b, 0x0111fffd, 
+  0x915fdb8c, 0x0110fffd, 0x915fdb8d, 0x01107ffd, 0x915fdb8e, 0x01103ffd, 0x915fdb8f, 0x01101ffd, 
+  0x915fdb90, 0x01100ffd, 0x915fdb91, 0x011007fd, 0x915fdb92, 0x011003fd, 0x915fdb93, 0x011001fd, 
+  0x915fdb94, 0x011000fd, 0x915fdb95, 0x0110007d, 0x915fdb96, 0x0110003d, 0x915fdb97, 0x0110001d, 
+  0x915fdb98, 0x0110000d, 0x915fdb99, 0x01100005, 0x915fdb9a, 0x00dc0000, 0x001fdb9a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32 XcCode_tpu_reset1[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x00161400, 0x01100001, 0x915fdb81, 0x010c0641, 0x915fdb82, 0x00dc0000, 0x001fdb83, 0x0110fffd, 
+  0x914fe304, 0x0113fffd, 0x915fdb85, 0x011ffffd, 0x915fdb86, 0x01200001, 0x915fdb87, 0x0123fffd, 
+  0x915fdb88, 0x011c0001, 0x915fdb89, 0x01200001, 0x915fdb8a, 0x010c0601, 0x915fdb8b, 0x0111fffd, 
+  0x915fdb8c, 0x0110fffd, 0x915fdb8d, 0x01107ffd, 0x915fdb8e, 0x01103ffd, 0x915fdb8f, 0x01101ffd, 
+  0x915fdb90, 0x01100ffd, 0x915fdb91, 0x011007fd, 0x915fdb92, 0x011003fd, 0x915fdb93, 0x011001fd, 
+  0x915fdb94, 0x011000fd, 0x915fdb95, 0x0110007d, 0x915fdb96, 0x0110003d, 0x915fdb97, 0x0110001d, 
+  0x915fdb98, 0x0110000d, 0x915fdb99, 0x01100005, 0x915fdb9a, 0x00dc0000, 0x001fdb9a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32 XcCode_tpu_reset2[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x00162400, 0x01100001, 0x915fdb81, 0x010c0641, 0x915fdb82, 0x00dc0000, 0x001fdb83, 0x0110fffd, 
+  0x914fe304, 0x0113fffd, 0x915fdb85, 0x011ffffd, 0x915fdb86, 0x01200001, 0x915fdb87, 0x0123fffd, 
+  0x915fdb88, 0x011c0001, 0x915fdb89, 0x01200001, 0x915fdb8a, 0x010c0601, 0x915fdb8b, 0x0111fffd, 
+  0x915fdb8c, 0x0110fffd, 0x915fdb8d, 0x01107ffd, 0x915fdb8e, 0x01103ffd, 0x915fdb8f, 0x01101ffd, 
+  0x915fdb90, 0x01100ffd, 0x915fdb91, 0x011007fd, 0x915fdb92, 0x011003fd, 0x915fdb93, 0x011001fd, 
+  0x915fdb94, 0x011000fd, 0x915fdb95, 0x0110007d, 0x915fdb96, 0x0110003d, 0x915fdb97, 0x0110001d, 
+  0x915fdb98, 0x0110000d, 0x915fdb99, 0x01100005, 0x915fdb9a, 0x00dc0000, 0x001fdb9a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32 XcCode_tpu_reset3[57] = {
+  0x000000dc, // program size
+  0x00000000, // trailing loads size
+  0x00163400, 0x01100001, 0x915fdb81, 0x010c0641, 0x915fdb82, 0x00dc0000, 0x001fdb83, 0x0110fffd, 
+  0x914fe304, 0x0113fffd, 0x915fdb85, 0x011ffffd, 0x915fdb86, 0x01200001, 0x915fdb87, 0x0123fffd, 
+  0x915fdb88, 0x011c0001, 0x915fdb89, 0x01200001, 0x915fdb8a, 0x010c0601, 0x915fdb8b, 0x0111fffd, 
+  0x915fdb8c, 0x0110fffd, 0x915fdb8d, 0x01107ffd, 0x915fdb8e, 0x01103ffd, 0x915fdb8f, 0x01101ffd, 
+  0x915fdb90, 0x01100ffd, 0x915fdb91, 0x011007fd, 0x915fdb92, 0x011003fd, 0x915fdb93, 0x011001fd, 
+  0x915fdb94, 0x011000fd, 0x915fdb95, 0x0110007d, 0x915fdb96, 0x0110003d, 0x915fdb97, 0x0110001d, 
+  0x915fdb98, 0x0110000d, 0x915fdb99, 0x01100005, 0x915fdb9a, 0x00dc0000, 0x001fdb9a, 
+  // trailing loads
+  
+};
+
+static const cyg_uint32* s_paulxMacRpuCodes[4]=
+{
+  XcCode_rpu_reset0,
+  XcCode_rpu_reset1,
+  XcCode_rpu_reset2,
+  XcCode_rpu_reset3
+};
+
+static const cyg_uint32* s_paulxMacTpuCodes[4]=
+{
+  XcCode_tpu_reset0,
+  XcCode_tpu_reset1,
+  XcCode_tpu_reset2,
+  XcCode_tpu_reset3
+};
+
+
 cyg_bool xc_reset(cyg_uint32 ulUnit)
 {
   cyg_bool fRet = false;
@@ -219,193 +349,165 @@ cyg_bool xc_reset(cyg_uint32 ulUnit)
   {
     PXPEC_AREA_T ptXpec = s_atXCUnits[ulUnit].ptXpec;
     PXMAC_AREA_T ptXmac = s_atXCUnits[ulUnit].ptXmac;
-    cyg_uint32   uIdx;
+    cyg_uint32   ulIdx;
 
     /* stop xMAC/xPEC */
-    ptXpec->ulXpuHoldPc = 1;                                          /* Hold the Program Counter */
-    ptXpec->aulStatCfg[ulUnit] = 0x00000088;                         /* Reset IE.OE asap */
-    ptXmac->ulTpuHoldPc = MSK_xmac_tpu_hold_pc_tpu_hold;              /* Just set Hold-Bit */
-    ptXmac->ulRpuHoldPc = MSK_xmac_rpu_hold_pc_rpu_hold;              /* Just set Hold-Bit */
-    ptXpec->aulStatCfg[ulUnit] = 0x00000088;                         /* Reset IE.OE asap */
-    ptXmac->ulConfigObu = 0x00000180;                                 /* Reset TX.OE asap */
+    ptXpec->ulXpuHoldPc        = 1;                              /* Hold xPEC */
+    ptXpec->aulStatCfg[ulUnit] = 0x00000088;                     /* Reset IO.OE asap */
+    ptXmac->ulTpuHoldPc        = MSK_xmac_tpu_hold_pc_tpu_hold;  /* Just set Hold-Bit */
+    ptXmac->ulRpuHoldPc        = MSK_xmac_rpu_hold_pc_rpu_hold;  /* Just set Hold-Bit */
+    ptXpec->aulStatCfg[ulUnit] = 0x00000088;                     /* Reset IO.OE asap */
+
+    /* load ratemul reset code */
+    LoadXCCode(s_atXCUnits[ulUnit].ulXmacPhys, 
+               (cyg_uint32*)s_atXCUnits[ulUnit].ptXmac, 
+               sizeof(*s_atXCUnits[ulUnit].ptXmac), 
+               s_paulxMacRpuCodes[ulUnit]);    
+
+    LoadXCCode(s_atXCUnits[ulUnit].ulXmacPhys, 
+               (cyg_uint32*)s_atXCUnits[ulUnit].ptXmac, 
+               sizeof(*s_atXCUnits[ulUnit].ptXmac), 
+               s_paulxMacTpuCodes[ulUnit]);    
+
+    ptXmac->ulRpuPc     = 0; /* Reset PC to 0 */
+    ptXmac->ulTpuPc     = 0; /* Reset PC to 0 */
+    ptXmac->ulTpuHoldPc = 0; /* Clear Hold-Bit */
+    ptXmac->ulRpuHoldPc = 0; /* Clear Hold-Bit */
+
+    /* !!!! ATTENTION: There must be enougth time between starting xMAC and stopping xMAC to execute reset programm */
 
     /* clear xPEC events and stop DMA */
-    ptXpec->aulRam[0] = 0xC0000FFF;                                   /* Use the command wait b000000000000,b111111111111 at Address 0*/
-    ptXpec->ulPc = 0x000;                                             /* Reset the Program Counter to 0 on netX100/500 */
-    ptXpec->ulStatCfg = 0;                                            /* Reset Timer operation and DMA */
-
-    ptXpec->ulXpuHoldPc = 0;                                          /* Start the Program */
-    ptXpec->aulRam[0x7FF] = 0x7F;                                     /* Link and Stop DMA */
-    ptXpec->aulRam[0x7FE] = 0x00;                                     /* dummy access to let xpec run another cycle */
-
-    ptXpec->ulXpuHoldPc = 1;                                          /* Hold the Program Counter */
-    ptXpec->ulPc = 0x000;                                             /* Reset the Program Counter to 0 on netX100/500 */
-
-    /* reset urx and utx */
-    switch(ulUnit)                                                      /* Set Reset-Flag for FIFO */
-    {
-      case 0: ptXmac->ulConfigShared0 |=MSK_xmac_config_shared0_reset_tx_fifo;
-              ptXmac->ulConfigShared0 &= ~MSK_xmac_config_shared0_reset_tx_fifo;
-              ptXmac->ulConfigShared0 |=MSK_xmac_config_shared0_reset_rx_fifo; 
-              ptXmac->ulConfigShared0 &= ~MSK_xmac_config_shared0_reset_rx_fifo;
-              break;
-      case 1: ptXmac->ulConfigShared1 |=MSK_xmac_config_shared1_reset_tx_fifo;
-              ptXmac->ulConfigShared1 &= ~MSK_xmac_config_shared1_reset_tx_fifo;
-              ptXmac->ulConfigShared1 |=MSK_xmac_config_shared0_reset_rx_fifo; 
-              ptXmac->ulConfigShared1 &= ~MSK_xmac_config_shared0_reset_rx_fifo;
-              break;
-      case 2: ptXmac->ulConfigShared2 |=MSK_xmac_config_shared2_reset_tx_fifo;
-              ptXmac->ulConfigShared2 &= ~MSK_xmac_config_shared2_reset_tx_fifo;
-              ptXmac->ulConfigShared2 |=MSK_xmac_config_shared0_reset_rx_fifo; 
-              ptXmac->ulConfigShared2 &= ~MSK_xmac_config_shared0_reset_rx_fifo;
-              break;
-      case 3: ptXmac->ulConfigShared3 |=MSK_xmac_config_shared2_reset_tx_fifo;
-              ptXmac->ulConfigShared3 &= ~MSK_xmac_config_shared2_reset_tx_fifo;
-              ptXmac->ulConfigShared3 |=MSK_xmac_config_shared0_reset_rx_fifo; 
-              ptXmac->ulConfigShared3 &= ~MSK_xmac_config_shared0_reset_rx_fifo;
-              break;
-    }
+    ptXpec->aulRam[0]     = 0xC0000FFF; /* Use the command wait b000000000000,b111111111111 at Address 0 */
+    ptXpec->ulPc          = 0;          /* Reset the Program Counter to 0 on netX100/500 */
+    ptXpec->ulStatCfg     = 0;     /* Reset Timer operation and DMA */
+    ptXpec->ulXpuHoldPc   = 0;      /* Start the Program */
+    ptXpec->aulRam[0x7FF] = 0x7F;   /* Link and Stop DMA */
+    ptXpec->aulRam[0x7FE] = 0x00;   /* dummy access to let xpec run another cycle */
+    ptXpec->ulXpuHoldPc   = 1;      /* Hold the Program Counter */
+    ptXpec->ulPc          = 0;          /* Reset the Program Counter to 0 on netX100/500 */
 
     /* reset all xPEC registers to default values */
-    for(uIdx = 0; uIdx < 8; uIdx++)
-      ptXpec->aulR[uIdx] = 0;
-
-    ptXpec->ulRange01 = 0;
-    ptXpec->ulRange23 = 0;
-    ptXpec->ulRange45 = 0;
-    ptXpec->ulRange67 = 0;
-    ptXpec->ulTimer0 = 0;
-    ptXpec->ulTimer1 = 0;
-    ptXpec->ulTimer2 = 0;
-    ptXpec->ulTimer3 = 0;
-    ptXpec->ulUrxCount = 0;
-    ptXpec->ulUtxCount = 0;
-    ptXpec->ulStatCfg = 0;
-    ptXpec->ulEcMaskA = 0x0000ffff;
-    ptXpec->ulEcMaskB = 0x0000ffff;
-    ptXpec->ulEcMask0 = 0x0000ffff;
-    ptXpec->ulEcMask1 = 0x0000ffff;
-    ptXpec->ulEcMask2 = 0x0000ffff;
-    ptXpec->ulEcMask3 = 0x0000ffff;
-    ptXpec->ulEcMask4 = 0x0000ffff;
-    ptXpec->ulEcMask5 = 0x0000ffff;
-    ptXpec->ulEcMask6 = 0x0000ffff;
-    ptXpec->ulEcMask7 = 0x0000ffff;
-    ptXpec->ulEcMask8 = 0x0000ffff;
-    ptXpec->ulEcMask9 = 0x0000ffff;
-    ptXpec->ulTimer4 = 0;
-    ptXpec->ulTimer5 = 0;
-    ptXpec->ulIrq  = 0xffff0000;   /* confirm all ARM IRQs */
-    ptXpec->ulAdc = 0;
+    for(ulIdx = 0; ulIdx < 8; ulIdx++)
+      ptXpec->aulR[ulIdx] = 0;
+    ptXpec->ulRange01   = 0;
+    ptXpec->ulRange23   = 0;
+    ptXpec->ulRange45   = 0;
+    ptXpec->ulRange67   = 0;
+    ptXpec->ulTimer0    = 0;
+    ptXpec->ulTimer1    = 0;
+    ptXpec->ulTimer2    = 0;
+    ptXpec->ulTimer3    = 0;
+    ptXpec->ulUrxCount  = 0;
+    ptXpec->ulUtxCount  = 0;
+    ptXpec->ulStatCfg   = 0;
+    ptXpec->ulEcMaskA   = 0x0000ffff;
+    ptXpec->ulEcMaskB   = 0x0000ffff;
+    for(ulIdx = 0; ulIdx < 10; ulIdx++)
+      ptXpec->aulEcMask[ulIdx] = 0x0000ffff;
+    ptXpec->ulTimer4    = 0;
+    ptXpec->ulTimer5    = 0;
+    ptXpec->ulIrq       = 0xffff0000;   /* confirm all ARM IRQs */
+    ptXpec->ulAdc       = 0;
 
     /* reset SR of current port */
-    for(uIdx = 4 * ulUnit; uIdx < 4 * ulUnit + 4; ++uIdx)
-      ptXpec->aulSr[uIdx] = 0;
+    ptXpec->aulSr[ulUnit*4]     = 0;
+    ptXpec->aulSr[ulUnit*4+1]   = 0;
+    ptXpec->aulSr[ulUnit*4+2]   = 0;
+    ptXpec->aulSr[ulUnit*4+3]   = 0;
+    ptXpec->aulStatCfg[ulUnit]  = 0x00000088;
+    
+    /* Hold xMAC */    
+    ptXmac->ulTpuHoldPc = MSK_xmac_tpu_hold_pc_tpu_hold;
+    ptXmac->ulRpuHoldPc = MSK_xmac_rpu_hold_pc_rpu_hold;
 
-    ptXpec->aulStatCfg[ulUnit] = 0x00000088;
+    /* reset urx and utx fifos */
+    switch( ulUnit )
+    {
+      case 0: 
+        ptXmac->ulConfigShared0 |= MSK_xmac_config_shared0_reset_tx_fifo;
+        ptXmac->ulConfigShared0 &= ~MSK_xmac_config_shared0_reset_tx_fifo;
+        ptXmac->ulConfigShared0 |= MSK_xmac_config_shared0_reset_rx_fifo; 
+        ptXmac->ulConfigShared0 &= ~MSK_xmac_config_shared0_reset_rx_fifo;
+        break;
+      case 1: 
+        ptXmac->ulConfigShared1 |= MSK_xmac_config_shared1_reset_tx_fifo;
+        ptXmac->ulConfigShared1 &= ~MSK_xmac_config_shared1_reset_tx_fifo;
+        ptXmac->ulConfigShared1 |= MSK_xmac_config_shared1_reset_rx_fifo; 
+        ptXmac->ulConfigShared1 &= ~MSK_xmac_config_shared1_reset_rx_fifo;
+        break;
+      case 2:
+        ptXmac->ulConfigShared2 |= MSK_xmac_config_shared2_reset_tx_fifo;
+        ptXmac->ulConfigShared2 &= ~MSK_xmac_config_shared2_reset_tx_fifo;
+        ptXmac->ulConfigShared2 |= MSK_xmac_config_shared2_reset_rx_fifo; 
+        ptXmac->ulConfigShared2 &= ~MSK_xmac_config_shared2_reset_rx_fifo;
+        break;
+      case 3:
+        ptXmac->ulConfigShared3 |= MSK_xmac_config_shared3_reset_tx_fifo;
+        ptXmac->ulConfigShared3 &= ~MSK_xmac_config_shared3_reset_tx_fifo;
+        ptXmac->ulConfigShared3 |= MSK_xmac_config_shared3_reset_rx_fifo; 
+        ptXmac->ulConfigShared3 &= ~MSK_xmac_config_shared3_reset_rx_fifo;
+        break;
+    }
 
     /* reset IRQs from ARM side */ 
     s_pulXpecIRQ[ulUnit] = 0x0000FFFF;
-
+              
     /* reset all xMAC registers to default values */
-    ptXmac->ulRxHw = 0;
-    ptXmac->ulRxHwCount = 0;
-    ptXmac->ulTx = 0;
-    ptXmac->ulTxHw = 0;
-    ptXmac->ulTxHwCount = 0;
-    ptXmac->ulTxSend = 0;
-    ptXmac->aulWr[0] = 0;
-    ptXmac->aulWr[1] = 0;
-    ptXmac->aulWr[2] = 0;
-    ptXmac->aulWr[3] = 0;
-    ptXmac->aulWr[4] = 0;
-    ptXmac->aulWr[5] = 0;
-    ptXmac->aulWr[6] = 0;
-    ptXmac->aulWr[7] = 0;
-    ptXmac->aulWr[8] = 0;
-    ptXmac->aulWr[9] = 0;
-    ptXmac->ulConfigMii = 0;
-    ptXmac->ulConfigNibbleFifo = 0x00000280;
-    ptXmac->ulConfigSbu = 0;
-    ptXmac->ulStartSamplePos = 0;
-    ptXmac->ulStopSamplePos = 0;
-    ptXmac->ulStartTransPos = 0;
-    ptXmac->ulStopTransPos = 0;
-    ptXmac->ulRpuCount1 = 0;
-    ptXmac->ulRpuCount2 = 0;
-    ptXmac->ulTpuCount1 = 0;
-    ptXmac->ulTpuCount2 = 0;
-    ptXmac->ulRxCount = 0;
-    ptXmac->ulTxCount = 0;
-    ptXmac->ulRpmMask0 = 0;
-    ptXmac->ulRpmVal0 = 0;
-    ptXmac->ulRpmMask1 = 0;
-    ptXmac->ulRpmVal1 = 0;
-    ptXmac->ulTpmMask0 = 0;
-    ptXmac->ulTpmVal0 = 0;
-    ptXmac->ulTpmMask1 = 0;
-    ptXmac->ulTpmVal1 = 0;
-    ptXmac->ulRxCrcPolynomialL = 0;
-    ptXmac->ulRxCrcPolynomialH = 0;
-    ptXmac->ulRxCrcL = 0;
-    ptXmac->ulRxCrcH = 0;
-    ptXmac->ulRxCrcCfg = 0;
-    ptXmac->ulTxCrcPolynomialL = 0;
-    ptXmac->ulTxCrcPolynomialH = 0;
-    ptXmac->ulTxCrcL = 0;
-    ptXmac->ulTxCrcH = 0;
-    ptXmac->ulTxCrcCfg = 0;
+    ptXmac->ulRxHw                = 0;
+    ptXmac->ulRxHwCount           = 0;
+    ptXmac->ulTx                  = 0;
+    ptXmac->ulTxHw                = 0;
+    ptXmac->ulTxHwCount           = 0;
+    ptXmac->ulTxSend              = 0;
+    for(ulIdx = 0; ulIdx < 10; ulIdx++)
+      ptXmac->aulWr[ulIdx]              = 0;
+    ptXmac->ulConfigMii          = 0;
+    ptXmac->ulConfigNibbleFifo   = 0x00000280;
+    ptXmac->ulRpuCount1          = 0;
+    ptXmac->ulRpuCount2          = 0;
+    ptXmac->ulTpuCount1          = 0;
+    ptXmac->ulTpuCount2          = 0;
+    ptXmac->ulRxCount            = 0;
+    ptXmac->ulTxCount            = 0;
+    ptXmac->ulRpmMask0           = 0;
+    ptXmac->ulRpmVal0            = 0;
+    ptXmac->ulRpmMask1           = 0;
+    ptXmac->ulTpmVal1            = 0;
+    ptXmac->ulTpmMask0           = 0;
+    ptXmac->ulTpmVal0            = 0;
+    ptXmac->ulTpmMask1           = 0;
+    ptXmac->ulTpmVal1            = 0;
+    ptXmac->ulRxCrcPolynomialL   = 0;
+    ptXmac->ulRxCrcPolynomialH   = 0;
+    ptXmac->ulRxCrcL             = 0;
+    ptXmac->ulRxCrcH             = 0;
+    ptXmac->ulRxCrcCfg           = 0;
+    ptXmac->ulTxCrcPolynomialL   = 0;
+    ptXmac->ulTxCrcPolynomialH   = 0;
+    ptXmac->ulTxCrcL             = 0;
+    ptXmac->ulTxCrcH             = 0;
+    ptXmac->ulTxCrcCfg           = 0;
 
-    /* reset rate multipliers */
-    ptXmac->aulRpuProgram[0] = 0x00dc0000;                            /* endless loop */
-    ptXmac->aulRpuProgram[1] = 0x001fdb80;
-    ptXmac->aulTpuProgram[0] = 0x00dc0000;                            /* endless loop */
-    ptXmac->aulTpuProgram[1] = 0x001fdb80;
-
-    ptXmac->ulRpuPc = 0;
-    ptXmac->ulTpuPc = 0;
-
-    ptXmac->ulObuRateMulStart = 0;
-    ptXmac->ulObuRateMulAdd = 1;                                      /* Reset the Rate Multiplier Add Value */
-    ptXmac->ulSbuRateMulStart = 0;
-    ptXmac->ulSbuRateMulAdd = 1;                                      /* Reset the Rate Multiplier Add Value */
-  
-    while (ptXmac->ulObuRateMul != 0xffff)                          /* wait until rate mul has stopped */
+    /* reset encoder and PWM on ports 2 and 3 */
+    switch( ulUnit )                                 
     {
-      ptXmac->ulTpuHoldPc = 0;                                      /* every 5 cycles check if ratemul has reached end */
-      ptXmac->ulTpuHoldPc = 0;
-      ptXmac->ulTpuHoldPc = 0;
-      ptXmac->ulTpuHoldPc = 0;
-      ptXmac->ulTpuHoldPc = 0;
-      ptXmac->ulTpuHoldPc = MSK_xmac_tpu_hold_pc_tpu_hold;           /* Just set Hold-Bit */
-    }
-
-    while (ptXmac->ulSbuRateMul != 0xffff)                            /* wait until rate mul has stopped */
-    {
-      ptXmac->ulRpuHoldPc = 0;                                      /* every 5 cycles check if ratemul has reached end */
-      ptXmac->ulRpuHoldPc = 0;
-      ptXmac->ulRpuHoldPc = 0;
-      ptXmac->ulRpuHoldPc = 0;
-      ptXmac->ulRpuHoldPc = 0;
-      ptXmac->ulRpuHoldPc = MSK_xmac_rpu_hold_pc_rpu_hold;           /* Just set Hold-Bit */
-    }
-
-    /* reset encoder and PWM on ports 2/3 */
-    if(ulUnit >= 2)
-    {
-      ptXmac->ulPwmConfig = 0;
-      ptXmac->ulPwmStatus = 0;
-      ptXmac->ulPwmTp = 0;
-      ptXmac->ulPwmTu = 0;
-      ptXmac->ulPwmTv = 0;
-      ptXmac->ulPwmTw = 0;
-      ptXmac->ulPwmTd = 0;
-      ptXmac->ulRpwmTp = 0;
-      ptXmac->ulRpwmTr = 0;
-      ptXmac->ulPosConfigEncoder = 0;
-      ptXmac->ulPosConfigCapture = 0;
-      ptXmac->ulPosCommand = 0;
-      ptXmac->ulPosStatus = 0;
+      case 2: /* fall through */
+      case 3: 
+        ptXmac->ulPwmConfig         = 0;
+        ptXmac->ulPwmStatus         = 0;
+        ptXmac->ulPwmTp             = 0;
+        ptXmac->ulPwmTu             = 0;
+        ptXmac->ulPwmTv             = 0;
+        ptXmac->ulPwmTw             = 0;
+        ptXmac->ulPwmTd             = 0;
+        ptXmac->ulRpwmTp            = 0;
+        ptXmac->ulRpwmTr            = 0;
+        ptXmac->ulPosConfigEncoder  = 0;
+        ptXmac->ulPosConfigCapture  = 0;
+        ptXmac->ulPosCommand        = 0;
+        ptXmac->ulPosStatus         = 0;
+        break;
+      default: break;
     }
 
     fRet = true;
