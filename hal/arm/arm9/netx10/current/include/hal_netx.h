@@ -70,6 +70,12 @@
 #define ARM_NETX_BAUD_19200   ((DEV_BAUD_19200*16*65536)/(ARM_NETX_HOST_CLOCK/100))
 #define ARM_NETX_BAUD_9600    ((DEV_BAUD_9600*16*65536)/(ARM_NETX_HOST_CLOCK/100))
 
+cyg_bool xc_open(cyg_uint32 ulUnit);
+cyg_bool xc_close(cyg_uint32 ulUnit);
+
+cyg_bool xc_load(cyg_uint32 ulUnit, const cyg_uint32* pulXPEC, const cyg_uint32* pulXMACRPU, const cyg_uint32* pulXMACTPU);
+cyg_bool xc_reset(cyg_uint32 ulUnit);
+cyg_bool xc_start(cyg_uint32 ulUnit);
+cyg_bool xc_stop(cyg_uint32 ulUnit);
 
 #endif //CYGONCE_HAL_NETX_H
-

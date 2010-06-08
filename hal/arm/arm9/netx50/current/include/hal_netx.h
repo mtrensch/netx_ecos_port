@@ -82,9 +82,4 @@ cyg_bool xc_reset(cyg_uint32 ulUnit);
 cyg_bool xc_start(cyg_uint32 ulUnit);
 cyg_bool xc_stop(cyg_uint32 ulUnit);
 
-
-
-
-
 #endif //CYGONCE_HAL_NETX_H
-
