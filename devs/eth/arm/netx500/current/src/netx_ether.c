@@ -222,7 +222,7 @@ static void PhyMDIO(unsigned int uPhyPrt, unsigned int uAcc, unsigned int uRegAd
   tVlu.bf.miimu_regaddr = uRegAdr;
   
   if(uAcc == 0) {
-    tVlu.bf.miimu_opmode = 2;
+    tVlu.bf.miimu_opmode = 0;
     tVlu.bf.phy_nres = 1;
     tVlu.bf.miimu_data = 0;
     s_ptMiiMu->val = tVlu.val; /* Write the Command now to the PHY */
@@ -351,7 +351,7 @@ void netxeth_start(struct eth_drv_sc *sc, unsigned char *enaddr, int flags)
           ptPortInfo->pulxMACTPUFirmware);
 
   // local mac config
-  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_LOCAL_MAC_CONFIG) / sizeof(cyg_uint32)] = (0x8 << SRT_ETHMAC_LOCAL_MAC_CONFIG_TRAFFIC_CLASS_ARRANGEMENT);
+  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_TRAFFIC_CLASS_ARRANGEMENT) / sizeof(cyg_uint32)] = (0x8 << SRT_ETHMAC_TRAFFIC_CLASS_ARRANGEMENT_VAL);
 
   for(ulIdx = 1; ulIdx < (MAX_SEND_SLOTS + 1); ulIdx++)
   {
@@ -371,11 +371,11 @@ void netxeth_start(struct eth_drv_sc *sc, unsigned char *enaddr, int flags)
     s_ptFifoArea->aulPFifo[ulFifoOffset + EMPTY_PTR_FIFO] = tPtr.uiVal;    
   }
 
-  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_INTERRUPTS_ENABLE) / sizeof(cyg_uint32)] |=
-                                                                          MSK_ETHMAC_INTERRUPTS_ENABLE_IND_HI |
-                                                                          MSK_ETHMAC_INTERRUPTS_ENABLE_IND_LO |
-                                                                          MSK_ETHMAC_INTERRUPTS_ENABLE_CON_HI |
-                                                                          MSK_ETHMAC_INTERRUPTS_ENABLE_CON_LO;
+  /* Enable all interrupt sources */
+  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_INTERRUPTS_ENABLE_IND_HI) / sizeof(cyg_uint32)] = MSK_ETHMAC_INTERRUPTS_ENABLE_IND_HI_VAL;
+  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_INTERRUPTS_ENABLE_IND_LO) / sizeof(cyg_uint32)] = MSK_ETHMAC_INTERRUPTS_ENABLE_IND_LO_VAL;
+  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_INTERRUPTS_ENABLE_CON_HI) / sizeof(cyg_uint32)] = MSK_ETHMAC_INTERRUPTS_ENABLE_CON_HI_VAL;
+  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_INTERRUPTS_ENABLE_CON_LO) / sizeof(cyg_uint32)] = MSK_ETHMAC_INTERRUPTS_ENABLE_CON_LO_VAL;
 
   ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_LOCAL_MAC_ADDRESS_HI) / sizeof(cyg_uint32)] = pusMAC[2];
   ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_LOCAL_MAC_ADDRESS_LO) / sizeof(cyg_uint32)] = (pusMAC[1] << 16) |
@@ -406,11 +406,12 @@ void netxeth_stop(struct eth_drv_sc *sc)
   uiPhyData |= DRV_CB12_CONTROL_POWER_DOWN;
   PhyMDIO(s_abPhyAddresses[ptPortInfo->ulPort], MDIO_WRITE, DRV_CB12_CONTROL, &uiPhyData); 
   
-  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_INTERRUPTS_ENABLE) / sizeof(cyg_uint32)] &=
-                                                                          ~(MSK_ETHMAC_INTERRUPTS_ENABLE_IND_HI |
-                                                                            MSK_ETHMAC_INTERRUPTS_ENABLE_IND_LO |
-                                                                            MSK_ETHMAC_INTERRUPTS_ENABLE_CON_HI |
-                                                                            MSK_ETHMAC_INTERRUPTS_ENABLE_CON_LO);
+  /* Disable all interrupts */
+  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_INTERRUPTS_ENABLE_IND_HI) / sizeof(cyg_uint32)] = 0;
+  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_INTERRUPTS_ENABLE_IND_LO) / sizeof(cyg_uint32)] = 0;
+  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_INTERRUPTS_ENABLE_CON_HI) / sizeof(cyg_uint32)] = 0;
+  ptPortInfo->pulxPECBase[(REL_Adr_ram_start + REL_Adr_ETHMAC_INTERRUPTS_ENABLE_CON_LO) / sizeof(cyg_uint32)] = 0;
+  
   //empty all fifo's from this channel
   s_ptFifoArea->ulPFifoReset |= 0xFF << (ptPortInfo->ulPort * 8);
   s_ptFifoArea->ulPFifoReset &= ~(0xFF << (ptPortInfo->ulPort * 8));
