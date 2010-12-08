@@ -1,0 +1,138 @@
+# ====================================================================
+#
+#      ser_arm_netx.cdl
+#
+#      eCos serial ARM/netX configuration data
+#
+# ====================================================================
+#####ECOSGPLCOPYRIGHTBEGIN####
+## -------------------------------------------
+## This file is part of eCos, the Embedded Configurable Operating System.
+## Copyright (C) 1998, 1999, 2000, 2001, 2002 Red Hat, Inc.
+##
+## eCos is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free
+## Software Foundation; either version 2 or (at your option) any later version.
+##
+## eCos is distributed in the hope that it will be useful, but WITHOUT ANY
+## WARRANTY; without even the implied warranty of MERCHANTABILITY or
+## FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+## for more details.
+##
+## You should have received a copy of the GNU General Public License along
+## with eCos; if not, write to the Free Software Foundation, Inc.,
+## 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+##
+## As a special exception, if other files instantiate templates or use macros
+## or inline functions from this file, or you compile this file and link it
+## with other works to produce a work based on this file, this file does not
+## by itself cause the resulting work to be covered by the GNU General Public
+## License. However the source code for this file must still be made available
+## in accordance with section (3) of the GNU General Public License.
+##
+## This exception does not invalidate any other reasons why a work based on
+## this file might be covered by the GNU General Public License.
+##
+## Alternative licenses for eCos may be arranged by contacting Red Hat, Inc.
+## at http://sources.redhat.com/ecos/ecos-license/
+## -------------------------------------------
+#####ECOSGPLCOPYRIGHTEND####
+# ====================================================================
+######DESCRIPTIONBEGIN####
+#
+# Author(s):      Michael Trensch
+# Original data:  
+# Contributors:	  
+# Date:           March 11, 2006
+#
+#####DESCRIPTIONEND####
+#
+# ====================================================================
+
+
+cdl_package CYGPKG_IO_SERIAL_ARM_NETX {
+    display       "Hilscher netX serial device drivers"
+
+    parent        CYGPKG_IO_SERIAL_DEVICES
+    active_if     CYGPKG_IO_SERIAL
+    active_if     CYGPKG_HAL_ARM_ARM9_NETX500
+
+    requires      CYGPKG_ERROR
+    include_dir   cyg/io
+    description   "
+           This option enables the serial device drivers for the
+           Hilscher netX."
+
+    compile       -library=libextras.a netx_serial.c
+
+   define_proc {
+            puts $::cdl_system_header "/***** serial driver proc output start *****/"
+	    puts $::cdl_system_header "#define CYGDAT_IO_SERIAL_DEVICE_HEADER <pkgconf/io_serial_arm_netx.h>"
+	    puts $::cdl_system_header "/*****  serial driver proc output end  *****/"
+    }
+
+    cdl_component CYGPKG_IO_SERIAL_ARM_NETX_UART0 {
+	    display       "Hilscher netX UART 0 driver"
+	    flavor        bool
+	    default_value 1
+	    description   "
+            This option includes the serial device driver for the Hilscher netX 
+            UART 0."
+
+	    cdl_option CYGNUM_IO_SERIAL_ARM_NETX_UART0_BAUD {
+	        display       "Baud rate for the Hilscher netX UART 0 driver"
+  	      flavor        data
+	        legal_values  { 50 75 110 "134_5" 150 200 300 600 1200 1800 2400 3600
+	    	  	      4800 7200 9600 14400 19200 38400 57600 115200 234000
+			    }
+	        default_value 115200
+	        description   "
+                This option specifies the default baud rate (speed) for the 
+                Hilscher netX UART 0."
+  	  }
+    }
+
+    cdl_component CYGPKG_IO_SERIAL_ARM_NETX_UART1 {
+	    display       "Hilscher netX UART 1 driver"
+	    flavor        bool
+	    default_value 0
+	    description   "
+            This option includes the serial device driver for the Hilscher netX 
+            UART 1."
+
+	    cdl_option CYGNUM_IO_SERIAL_ARM_NETX_UART1_BAUD {
+	        display       "Baud rate for the Hilscher netX UART 1 driver"
+  	      flavor        data
+	        legal_values  { 50 75 110 "134_5" 150 200 300 600 1200 1800 2400 3600
+	    	  	      4800 7200 9600 14400 19200 38400 57600 115200 234000
+			    }
+	        default_value 115200
+	        description   "
+                This option specifies the default baud rate (speed) for the 
+                Hilscher netX UART 1."
+  	  }
+    }
+
+    cdl_component CYGPKG_IO_SERIAL_ARM_NETX_UART2 {
+	    display       "Hilscher netX UART 2 driver"
+	    flavor        bool
+	    default_value 0
+	    description   "
+            This option includes the serial device driver for the Hilscher netX 
+            UART 2."
+
+	    cdl_option CYGNUM_IO_SERIAL_ARM_NETX_UART2_BAUD {
+	        display       "Baud rate for the Hilscher netX UART 2 driver"
+  	      flavor        data
+	        legal_values  { 50 75 110 "134_5" 150 200 300 600 1200 1800 2400 3600
+	    	  	      4800 7200 9600 14400 19200 38400 57600 115200 234000
+			    }
+	        default_value 115200
+	        description   "
+                This option specifies the default baud rate (speed) for the 
+                Hilscher netX UART 2."
+  	  }
+    }
+}
+
+# EOF ser_arm_integrator.cdl
