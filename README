@@ -1,0 +1,28 @@
+eCos RTOS port to Hilscher netX chips
+=====================================
+
+Overview:
+---------
+This project is an adaptation of the eCos HAL to the netX chip from the company Hilscher (www.hilscher.com).
+
+It contains all basic adjustments needed to get eCos running on one of the evaluation boards.
+
+Includes chips:
+---------------
+ - netX 100/500
+ - netX 50
+ - netX 10
+
+Included drivers:
+-----------------
+ - Ethernet
+ - Serial (RS232)
+
+Prerequisites:
+--------------
+ * eCos 3.0 or latest CVS
+
+Building an eCos package
+------------------------
+Just call the shell script makepkg.sh
+
