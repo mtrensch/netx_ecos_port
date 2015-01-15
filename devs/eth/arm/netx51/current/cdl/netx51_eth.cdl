@@ -1,0 +1,140 @@
+#==========================================================================
+#
+#      netx51_eth.cdl
+#
+#      Ethernet drivers for Hilscher netX51 Chip
+#
+#==========================================================================
+#####ECOSGPLCOPYRIGHTBEGIN####
+## -------------------------------------------
+## This file is part of eCos, the Embedded Configurable Operating System.
+## Copyright (C) 1998, 1999, 2000, 2001, 2002 Red Hat, Inc.
+## Copyright (C) 2002 Jonathan Larmour
+##
+## eCos is free software; you can redistribute it and/or modify it under
+## the terms of the GNU General Public License as published by the Free
+## Software Foundation; either version 2 or (at your option) any later version.
+##
+## eCos is distributed in the hope that it will be useful, but WITHOUT ANY
+## WARRANTY; without even the implied warranty of MERCHANTABILITY or
+## FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
+## for more details.
+##
+## You should have received a copy of the GNU General Public License along
+## with eCos; if not, write to the Free Software Foundation, Inc.,
+## 59 Temple Place, Suite 330, Boston, MA 02111-1307 USA.
+##
+## As a special exception, if other files instantiate templates or use macros
+## or inline functions from this file, or you compile this file and link it
+## with other works to produce a work based on this file, this file does not
+## by itself cause the resulting work to be covered by the GNU General Public
+## License. However the source code for this file must still be made available
+## in accordance with section (3) of the GNU General Public License.
+##
+## This exception does not invalidate any other reasons why a work based on
+## this file might be covered by the GNU General Public License.
+##
+## Alternative licenses for eCos may be arranged by contacting Red Hat, Inc.
+## at http://sources.redhat.com/ecos/ecos-license/
+## -------------------------------------------
+#####ECOSGPLCOPYRIGHTEND####
+#==========================================================================
+######DESCRIPTIONBEGIN####
+#
+# Author(s):    Michael Trensch
+# Contributors: 
+#               
+# Date:         2015-01-15
+# Purpose:      
+# Description:  
+#
+#####DESCRIPTIONEND####
+#
+#========================================================================*/
+
+
+cdl_package CYGPKG_DEVS_ETH_ARM_NETX51 {
+    display       "Hilscher netX51 ethernet driver"
+    parent        CYGPKG_IO_ETH_DRIVERS
+    active_if     CYGPKG_IO_ETH_DRIVERS
+    active_if     CYGPKG_HAL_ARM_ARM9_NETX51
+    implements    CYGHWR_NET_DRIVERS
+    implements    CYGHWR_NET_DRIVER_ETH0
+    implements    CYGHWR_NET_DRIVER_ETH1
+
+    include_dir   net
+    description   "Ethernet driver for Hilscher netX"
+    compile       -library=libextras.a netx_ether.c rpu_eth0.c rpu_eth1.c tpu_eth0.c tpu_eth1.c xpec_eth_std_mac_rpec0.c xpec_eth_std_mac_rpec1.c
+    
+
+    cdl_component CYGPKG_DEVS_ETH_ARM_NETX_ETH0 {
+        display       "Hilscher netX intergrated ethernet port 0 driver"
+        flavor        bool
+        default_value 1
+        description   "
+            This option includes the ethernet device driver for the
+            Hilscher netX builtin ethernet port 0."
+
+        implements CYGHWR_NET_DRIVERS
+        implements CYGHWR_NET_DRIVER_ETH0
+
+        cdl_component CYGSEM_DEVS_ETH_ARM_NETX_ETH0_SETMAC {
+            display       "Set the ethernet station address"
+            flavor        bool
+      	    default_value 0
+            description   "Enabling this option will allow the ethernet
+            station address to be forced to the value set by the
+            configuration.  This may be required if the hardware does
+            not include a I2C Flash for the SA."
+            
+            cdl_option CYGDAT_DEVS_ETH_ARM_NETX_ETH0_MAC {
+                display       "The ethernet station address"
+                flavor        data
+                default_value {"{0x00, 0x11, 0x22, 0x33, 0x44, 0x55}"}
+                description   "The ethernet station address"
+            }
+        }
+    }
+
+    cdl_component CYGPKG_DEVS_ETH_ARM_NETX_ETH1 {
+        display       "Hilscher netX intergrated ethernet port 1 driver"
+        flavor        bool
+        default_value 1
+        description   "
+            This option includes the ethernet device driver for the
+            Hilscher netX builtin ethernet port 1."
+
+        implements CYGHWR_NET_DRIVERS
+        implements CYGHWR_NET_DRIVER_ETH1
+
+        cdl_component CYGSEM_DEVS_ETH_ARM_NETX_ETH1_SETMAC {
+            display       "Set the ethernet station address"
+            flavor        bool
+      	    default_value 0
+            description   "Enabling this option will allow the ethernet
+            station address to be forced to the value set by the
+            configuration.  This may be required if the hardware does
+            not include a I2C Flash for the SA."
+            
+            cdl_option CYGDAT_DEVS_ETH_ARM_NETX_ETH1_MAC {
+                display       "The ethernet station address"
+                flavor        data
+                default_value {"{0x00, 0x11, 0x22, 0x33, 0x44, 0x56}"}
+                description   "The ethernet station address"
+            }
+        }
+    }
+
+    cdl_option  CYGPKG_DEVS_ETH_ARM_NETX50_CFLAGS_ADD {
+        display "Additional compiler flags"
+        flavor  data
+        no_define
+        default_value { "-D_KERNEL -D__ECOS" }
+        description   "
+            This option modifies the set of compiler flags for
+            building the Hilscher netX ethernet driver package. 
+            These flags are used in addition to the set of global flags."
+    }
+}
+
+# EOF netx_eth.cdl

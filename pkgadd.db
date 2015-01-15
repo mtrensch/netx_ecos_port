@@ -64,6 +64,24 @@ package CYGPKG_DEVS_ETH_ARM_NETX10 {
   description "Ethernet driver for netX10 XC unit 0."
 }
 
+package CYGPKG_HAL_ARM_ARM9_NETX51 {
+	alias		{ "Hilscher netX51" hal_arm_arm9_netx51 }
+	directory	hal/arm/arm9/netx51
+	script		hal_arm_arm9_netx51.cdl
+	hardware
+	description "
+	The netX51 HAL package provides support for Hilscher
+	netX51 controllers."
+}
+
+package CYGPKG_DEVS_ETH_ARM_NETX51 {
+  alias   { "Hilscher netX51 Standard MAC driver" netx51_eth_driver}
+  hardware
+  directory devs/eth/arm/netx51
+  script    netx51_eth.cdl
+  description "Ethernet driver for netX51 XC unit 0/1."
+}
+
 target netx500_arm9_eb500hmi {
 	alias  {"Hilscher NXEB500-HMI Board" netx500_arm9_eb500hmi }
 	packages { CYGPKG_HAL_ARM
@@ -99,3 +117,13 @@ target netx10_arm9_nxhx10 {
 	description "
 	NXHX10 Board."
 }
+
+target netx51_arm9_nxhx51 {
+	alias  {"Hilscher NXHX51 Board" netx51_arm9_nxhx51 }
+	packages { CYGPKG_HAL_ARM
+		   CYGPKG_HAL_ARM_ARM9
+		   CYGPKG_HAL_ARM_ARM9_NETX51
+		   CYGPKG_IO_SERIAL_ARM_NETX
+	}
+	description "
+	NXHX51 Board."

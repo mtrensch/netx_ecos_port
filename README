@@ -10,6 +10,7 @@ It contains all basic adjustments needed to get eCos running on one of the evalu
 Includes chips:
 ---------------
  - netX 100/500
+ - netX 51
  - netX 50
  - netX 10
 
