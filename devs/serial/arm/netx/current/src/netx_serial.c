@@ -137,7 +137,7 @@ static SERIAL_FUNS(netx_serial_funs,
                                          CYG_SERIAL_STOP_DEFAULT,
                                          CYG_SERIAL_PARITY_DEFAULT,
                                          CYG_SERIAL_WORD_LENGTH_DEFAULT,
-                                         CYG_SERIAL_FLAGS_DEFAULT);
+                                         CYG_SERIAL_FLAGS_DEFAULT,
                                          &netx_serial_out_buf1[0], sizeof(netx_serial_out_buf1),
                                          &netx_serial_in_buf1[0], sizeof(netx_serial_in_buf1));
 
@@ -163,7 +163,7 @@ static SERIAL_FUNS(netx_serial_funs,
                                          CYG_SERIAL_STOP_DEFAULT,
                                          CYG_SERIAL_PARITY_DEFAULT,
                                          CYG_SERIAL_WORD_LENGTH_DEFAULT,
-                                         CYG_SERIAL_FLAGS_DEFAULT);
+                                         CYG_SERIAL_FLAGS_DEFAULT,
                                          &netx_serial_out_buf2[0], sizeof(netx_serial_out_buf2),
                                          &netx_serial_in_buf2[0], sizeof(netx_serial_in_buf2));
 
