@@ -71,6 +71,7 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX50 {
         puts $::cdl_system_header "#define CYGBLD_HAL_ARM_NETX50_H"
         puts $::cdl_system_header "#define CYGBLD_HAL_TARGET_H   <pkgconf/hal_arm.h>"
         puts $::cdl_system_header "#define CYGBLD_HAL_PLATFORM_H <pkgconf/hal_arm_netx50.h>"
+        puts $::cdl_header "#define HAL_CPU_NETX50    1"
     }
 
     compile       hal_diag.c netx_misc.c netx_xc.c

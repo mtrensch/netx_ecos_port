@@ -70,6 +70,7 @@ cdl_package CYGPKG_HAL_ARM_ARM9_NETX10 {
         puts $::cdl_system_header "#define CYGBLD_HAL_TARGET_H   <pkgconf/hal_arm.h>"
         puts $::cdl_system_header "#define CYGBLD_HAL_VARIANT_H  <pkgconf/hal_arm_arm9.h>"
         puts $::cdl_system_header "#define CYGBLD_HAL_PLATFORM_H <pkgconf/hal_arm_netx10.h>"    
+        puts $::cdl_header "#define HAL_CPU_NETX10    1"
         puts $::cdl_header "#define HAL_PLATFORM_CPU    \"ARM966-E\""
         puts $::cdl_header "#define HAL_PLATFORM_BOARD  \"netX10\""        
         puts $::cdl_header "#define HAL_PLATFORM_EXTRA  \"\""        
