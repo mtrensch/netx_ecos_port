@@ -55,7 +55,10 @@ cdl_package CYGPKG_IO_SERIAL_ARM_NETX {
 
     parent        CYGPKG_IO_SERIAL_DEVICES
     active_if     CYGPKG_IO_SERIAL
-    active_if     CYGPKG_HAL_ARM_ARM9_NETX500
+    active_if     {CYGPKG_HAL_ARM_ARM9_NETX500 ||
+                   CYGPKG_HAL_ARM_ARM9_NETX50  ||
+                   CYGPKG_HAL_ARM_ARM9_NETX10  ||
+                   CYGPKG_HAL_ARM_ARM9_NETX51}
 
     requires      CYGPKG_ERROR
     include_dir   cyg/io

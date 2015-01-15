@@ -82,6 +82,7 @@ target netx500_arm9_nxhx50 {
 		   CYGPKG_HAL_ARM_ARM9
 		   CYGPKG_HAL_ARM_ARM9_NETX50 
 		   CYGPKG_DEVS_ETH_ARM_NETX50
+       CYGPKG_IO_SERIAL_ARM_NETX
 	}
 	description "
 	NXHX50 Board."
@@ -93,6 +94,7 @@ target netx10_arm9_nxhx10 {
 		   CYGPKG_HAL_ARM_ARM9
 		   CYGPKG_HAL_ARM_ARM9_NETX10
 		   CYGPKG_DEVS_ETH_ARM_NETX10
+       CYGPKG_IO_SERIAL_ARM_NETX
 	}
 	description "
 	NXHX10 Board."

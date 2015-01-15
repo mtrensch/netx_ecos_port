@@ -152,4 +152,32 @@ static unsigned char select_parity[] = {
     LCR_PS,     // Space parity
 };
 
+#define OFFS_UARTDR     (0x00)
+#define OFFS_UARTLCR_H  (0x08)
+#define OFFS_UARTLCR_M  (0x0C)
+#define OFFS_UARTLCR_L  (0x10)
+#define OFFS_UARTCR     (0x14)
+#define OFFS_UARTFR     (0x18)
+#define OFFS_UARTIIR    (0x1C)
+#define OFFS_UARTDRVOUT (0x30)
+#define OFFS_UARTCR_2   (0x34)
+
+#define MSK_UARTFR_RXFE             (0x00000010)
+#define MSK_UARTFR_TXFF             (0x00000020)
+
+#define MSK_UARTCR_2_BAUD_RATE_MODE (0x00000001)
+
+#define MSK_UARTCR_UARTEN           (0x00000001)
+#define MSK_UARTCR_RIE              (0x00000010)
+#define MSK_UARTCR_TIE              (0x00000020)
+#define MSK_UARTCR_RTIE             (0x00000040)
+
+#define MSK_UARTDRVOUT_DRVTX        (0x00000001)
+
+#define MSK_UARTLCR_H_FEN           (0x00000010)
+
+#define MSK_UARTIIR_RTIS            (0x00000008)
+#define MSK_UARTIIR_TIS             (0x00000004)
+#define MSK_UARTIIR_RIS             (0x00000002)
+
 #endif // CYGONCE_ARM_NETX_SERIAL_H

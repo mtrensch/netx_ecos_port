@@ -74,6 +74,10 @@
 #define ARM_NETX_BAUD_19200   ((DEV_BAUD_19200*16*65536)/(ARM_NETX_HOST_CLOCK/100))
 #define ARM_NETX_BAUD_9600    ((DEV_BAUD_9600*16*65536)/(ARM_NETX_HOST_CLOCK/100))
 
+#define NETX_UART0_PHYSADDR   (Addr_uart0)
+#define NETX_UART1_PHYSADDR   (Addr_uart1)
+#define NETX_UART2_PHYSADDR   (Addr_uart2)
+
 cyg_bool xc_open(cyg_uint32 ulUnit);
 cyg_bool xc_close(cyg_uint32 ulUnit);
 

@@ -100,7 +100,7 @@ static SERIAL_FUNS(netx_serial_funs,
 
 #ifdef CYGPKG_IO_SERIAL_ARM_NETX_UART0
 
-  static netx_serial_info netx_serial_info0 = {Addr_uart0, CYGNUM_HAL_INTERRUPT_UART0, 0};
+  static netx_serial_info netx_serial_info0 = {NETX_UART0_PHYSADDR, CYGNUM_HAL_INTERRUPT_UART0, 0};
   static unsigned char netx_serial_out_buf0[BUFFER_SIZE];
   static unsigned char netx_serial_in_buf0[BUFFER_SIZE];
 
@@ -126,7 +126,7 @@ static SERIAL_FUNS(netx_serial_funs,
 
 #ifdef CYGPKG_IO_SERIAL_ARM_NETX_UART1
 
-  static netx_serial_info netx_serial_info1 = {Addr_uart1, CYGNUM_HAL_INTERRUPT_UART1, 1};
+  static netx_serial_info netx_serial_info1 = {NETX_UART1_PHYSADDR, CYGNUM_HAL_INTERRUPT_UART1, 1};
   static unsigned char netx_serial_out_buf1[BUFFER_SIZE];
   static unsigned char netx_serial_in_buf1[BUFFER_SIZE];
 
@@ -152,7 +152,7 @@ static SERIAL_FUNS(netx_serial_funs,
 
 #ifdef CYGPKG_IO_SERIAL_ARM_NETX_UART2
   
-  static netx_serial_info netx_serial_info2 = {Addr_uart2, CYGNUM_HAL_INTERRUPT_UART2, 2}; 
+  static netx_serial_info netx_serial_info2 = {NETX_UART2_PHYSADDR, CYGNUM_HAL_INTERRUPT_UART2, 2};
   static unsigned char netx_serial_out_buf2[BUFFER_SIZE];
   static unsigned char netx_serial_in_buf2[BUFFER_SIZE];
 
@@ -176,8 +176,8 @@ static SERIAL_FUNS(netx_serial_funs,
                &netx_serial_channel2);
 #endif
 
-#define RX_DATA(s)		          (((s) & MSK_uartfr_RXFE) == 0)
-#define TX_READY(s)		          (((s) & MSK_uartfr_TXFF) == 0)
+#define RX_DATA(s)		          (((s) & MSK_UARTFR_RXFE) == 0)
+#define TX_READY(s)		          (((s) & MSK_UARTFR_TXFF) == 0)
 
 // Internal function to actually configure the hardware to desired baud rate, etc.
 static bool netx_serial_config_port(serial_channel *chan, cyg_serial_info_t *new_config, bool init)
@@ -192,18 +192,18 @@ static bool netx_serial_config_port(serial_channel *chan, cyg_serial_info_t *new
       return false;  // Invalid configuration
 
   // first, disable everything
-  puiVirtBase[REL_Adr_uartcr / sizeof(cyg_uint32)] = 0;
+  puiVirtBase[OFFS_UARTCR / sizeof(cyg_uint32)] = 0;
 
   // TODO: For lower baudrates, we need to use normal baudrate calculation
 
   // use alternate baudrate calculation
-  puiVirtBase[REL_Adr_uartcr_2   / sizeof(cyg_uint32)] = MSK_uartcr_2_Baud_Rate_Mode;
+  puiVirtBase[OFFS_UARTCR_2   / sizeof(cyg_uint32)] = MSK_UARTCR_2_BAUD_RATE_MODE;
 
   // Set baud rate CYGNUM_HAL_VIRTUAL_VECTOR_CONSOLE_CHANNEL_BAUD
-  puiVirtBase[REL_Adr_uartlcr_m / sizeof(cyg_uint32)]  = (baud_divisor & 0xFF00) >> 8;
-  puiVirtBase[REL_Adr_uartlcr_l / sizeof(cyg_uint32)]  = baud_divisor & 0xFF;
+  puiVirtBase[OFFS_UARTLCR_M / sizeof(cyg_uint32)]  = (baud_divisor & 0xFF00) >> 8;
+  puiVirtBase[OFFS_UARTLCR_L / sizeof(cyg_uint32)]  = baud_divisor & 0xFF;
 
-  puiVirtBase[REL_Adr_uartdrvout / sizeof(cyg_uint32)] = MSK_uartdrvout_DRVTX; /* Set TX-Driver to enabled */   
+  puiVirtBase[OFFS_UARTDRVOUT / sizeof(cyg_uint32)] = MSK_UARTDRVOUT_DRVTX; /* Set TX-Driver to enabled */
 
   // ----------v----------v----------v----------v---------- 
   // NOTE: MUST BE WRITTEN LAST (AFTER UARTLCR_M & UARTLCR_L) 
@@ -211,13 +211,13 @@ static bool netx_serial_config_port(serial_channel *chan, cyg_serial_info_t *new
   _lcr = select_word_length[new_config->word_length - CYGNUM_SERIAL_WORD_LENGTH_5] | 
           select_stop_bits[new_config->stop]                                        |
           select_parity[new_config->parity]                                         | 
-          MSK_uartlcr_h_FEN ;
+          MSK_UARTLCR_H_FEN;
 
-  puiVirtBase[REL_Adr_uartlcr_h / sizeof(cyg_uint32)] = _lcr;
+  puiVirtBase[OFFS_UARTLCR_H / sizeof(cyg_uint32)] = _lcr;
     
     // finally, enable the uart 
-  puiVirtBase[REL_Adr_uartcr / sizeof(cyg_uint32)]  = MSK_uartcr_uartEN;
-  puiVirtBase[REL_Adr_uartcr / sizeof(cyg_uint32)] |= MSK_uartcr_RTIE | MSK_uartcr_RIE;
+  puiVirtBase[OFFS_UARTCR / sizeof(cyg_uint32)]  = MSK_UARTCR_UARTEN;
+  puiVirtBase[OFFS_UARTCR / sizeof(cyg_uint32)] |= MSK_UARTCR_RTIE | MSK_UARTCR_RIE;
 
   // save the configuration
   if(new_config != &chan->config) 
@@ -234,9 +234,11 @@ static bool netx_serial_init(struct cyg_devtab_entry *tab)
 {
     serial_channel*   chan      = (serial_channel *)tab->priv;
     netx_serial_info* netx_chan = (netx_serial_info *)chan->dev_priv;
+#if defined(HAL_CPU_NETX500)
     int               iIdx;
+#endif
    
-    netx_chan->pulVirtBase = hal_phys_to_virt_address(netx_chan->uiPhysBase, false);
+    netx_chan->pulVirtBase = (cyg_uint32*)hal_phys_to_virt_address(netx_chan->uiPhysBase, false);
 
     (chan->callbacks->serial_init)(chan);  // Really only required for interrupt driven devices
     
@@ -284,12 +286,12 @@ static bool netx_serial_putc(serial_channel *chan, unsigned char c)
 {
   netx_serial_info*       netx_chan   = (netx_serial_info *)chan->dev_priv;
   volatile unsigned int*  puiVirtBase = netx_chan->pulVirtBase;
-  unsigned int            status      = puiVirtBase[REL_Adr_uartfr / sizeof(cyg_uint32)];
+  unsigned int            status      = puiVirtBase[OFFS_UARTFR / sizeof(cyg_uint32)];
 
   if(TX_READY(status)) 
   {
     // Transmit buffer is empty
-    puiVirtBase[REL_Adr_uartdr / sizeof(cyg_uint32)] = c;
+    puiVirtBase[OFFS_UARTDR / sizeof(cyg_uint32)] = c;
     return true;
   } else 
   {
@@ -307,11 +309,11 @@ static unsigned char netx_serial_getc(serial_channel *chan)
   unsigned int            status ;
 
   do {
-      status = puiVirtBase[REL_Adr_uartfr / sizeof(cyg_uint32)];
+      status = puiVirtBase[OFFS_UARTFR / sizeof(cyg_uint32)];
   } while (!RX_DATA(status)) ;                   // Wait for char
 
   // get it 
-  c = (cyg_uint8)(puiVirtBase[REL_Adr_uartdr / sizeof(cyg_uint32)] & 0xFF);
+  c = (cyg_uint8)(puiVirtBase[OFFS_UARTDR / sizeof(cyg_uint32)] & 0xFF);
   return c;
 }
 
@@ -374,7 +376,7 @@ static void netx_serial_start_xmit(serial_channel *chan)
   netx_serial_info*       netx_chan   = (netx_serial_info *)chan->dev_priv;
   volatile unsigned int*  puiVirtBase = netx_chan->pulVirtBase;
 
-  puiVirtBase[REL_Adr_uartcr / sizeof(cyg_uint32)] |= MSK_uartcr_TIE;
+  puiVirtBase[OFFS_UARTCR / sizeof(cyg_uint32)] |= MSK_UARTCR_TIE;
 }
 
 // Disable the transmitter on the device
@@ -383,7 +385,7 @@ static void netx_serial_stop_xmit(serial_channel *chan)
   netx_serial_info*       netx_chan = (netx_serial_info *)chan->dev_priv;
   volatile unsigned int*  puiVirtBase = netx_chan->pulVirtBase;
 
-  puiVirtBase[REL_Adr_uartcr / sizeof(cyg_uint32)] &= ~MSK_uartcr_TIE; 
+  puiVirtBase[OFFS_UARTCR / sizeof(cyg_uint32)] &= ~MSK_UARTCR_TIE;
 }
 
 // Serial I/O - low level interrupt handler (ISR)
@@ -403,27 +405,27 @@ static void netx_serial_DSR(cyg_vector_t vector, cyg_ucount32 count, cyg_addrwor
   serial_channel*         chan        = (serial_channel *)data;
   netx_serial_info*       netx_chan   = (netx_serial_info *)chan->dev_priv;
   volatile unsigned int*  puiVirtBase = netx_chan->pulVirtBase;
-  unsigned char           isr         = puiVirtBase[REL_Adr_uartiir / sizeof(cyg_uint32)];
+  unsigned char           isr         = puiVirtBase[OFFS_UARTIIR / sizeof(cyg_uint32)];
 
-  while((isr & (MSK_uartiir_RTIS | MSK_uartiir_TIS | MSK_uartiir_RIS)) != 0) 
+  while((isr & (MSK_UARTIIR_RTIS | MSK_UARTIIR_TIS | MSK_UARTIIR_RIS)) != 0)
   {
-    if (isr & MSK_uartiir_TIS) 
+    if (isr & MSK_UARTIIR_TIS)
     {
       (chan->callbacks->xmt_char)(chan);
       
-    } else if (isr & MSK_uartiir_RTIS) 
+    } else if (isr & MSK_UARTIIR_RTIS)
     {
       (chan->callbacks->rcv_char)(chan, 
-                                 (cyg_uint8)(puiVirtBase[REL_Adr_uartdr / sizeof(cyg_uint32)] & 0xFF));
+                                 (cyg_uint8)(puiVirtBase[OFFS_UARTDR / sizeof(cyg_uint32)] & 0xFF));
       
-    } else if (isr & MSK_uartiir_RIS) 
+    } else if (isr & MSK_UARTIIR_RIS)
     {
       (chan->callbacks->rcv_char)(chan, 
-                                  (cyg_uint8)(puiVirtBase[REL_Adr_uartdr / sizeof(cyg_uint32)] & 0xFF));
+                                  (cyg_uint8)(puiVirtBase[OFFS_UARTDR / sizeof(cyg_uint32)] & 0xFF));
     }
    
-    puiVirtBase[REL_Adr_uartiir / sizeof(cyg_uint32)] = isr;
-    isr = puiVirtBase[REL_Adr_uartiir / sizeof(cyg_uint32)];
+    puiVirtBase[OFFS_UARTIIR / sizeof(cyg_uint32)] = isr;
+    isr = puiVirtBase[OFFS_UARTIIR / sizeof(cyg_uint32)];
   }
   
   cyg_drv_interrupt_unmask(netx_chan->ulInterrupt);
