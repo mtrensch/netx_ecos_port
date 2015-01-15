@@ -54,7 +54,7 @@
 // ====================================================================
 
 // Description of serial ports on Hilscher netX
-#define DEV_BAUD_230400         2304
+#define DEV_BAUD_230400         2304ULL
 #define DEV_BAUD_115200         1152
 #define DEV_BAUD_57600           576
 #define DEV_BAUD_38400           384
