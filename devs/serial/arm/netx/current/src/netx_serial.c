@@ -64,7 +64,9 @@ extern cyg_uint32 hal_phys_to_virt_address(cyg_uint32 phys, cyg_bool fCached);
 
 #include "netx_serial.h"
 
-static PGPIO_REGISTERS s_ptGpio = NULL;
+#if defined(HAL_CPU_NETX500)
+  static PGPIO_REGISTERS s_ptGpio = NULL;
+#endif
 
 typedef struct netx_serial_info 
 {
@@ -240,6 +242,7 @@ static bool netx_serial_init(struct cyg_devtab_entry *tab)
     
     netx_serial_config_port(chan, &chan->config, true);
   
+#if defined(HAL_CPU_NETX500)
     if(NULL == s_ptGpio)
     {
       s_ptGpio = (PGPIO_REGISTERS)hal_phys_to_virt_address(Addr_gpio, false);
@@ -249,6 +252,7 @@ static bool netx_serial_init(struct cyg_devtab_entry *tab)
     {
       s_ptGpio->aulConfig[netx_chan->ulPort * 4 + iIdx] = 0x02;
     }
+#endif
 
     if (chan->out_cbuf.len != 0) 
     {     
